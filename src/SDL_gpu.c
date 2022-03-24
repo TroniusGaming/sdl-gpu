@@ -788,7 +788,7 @@ void GPU_PushErrorCode(const char* function, GPU_ErrorEnum error, const char* de
 GPU_ErrorObject GPU_PopErrorCode(void)
 {
     unsigned int i;
-    GPU_ErrorObject result = {NULL, NULL, GPU_ERROR_NONE};
+    GPU_ErrorObject result = {NULL, NULL, GPU_ERROR_NONE, {0,0,0,0}};
 
     gpu_init_error_queue();
 
@@ -918,7 +918,7 @@ void GPU_UnsetViewport(GPU_Target* target)
 
 GPU_Camera GPU_GetDefaultCamera(void)
 {
-    GPU_Camera cam = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -100.0f, 100.0f, true};
+    GPU_Camera cam = {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, -100.0f, 100.0f, true, {0,0,0,0,0,0,0}};
     return cam;
 }
 
