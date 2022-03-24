@@ -5008,14 +5008,20 @@ static int stbi__parse_png_file(stbi__png* z, int scan, int req_comp)
             if (first) return stbi__err("first not IHDR", "Corrupt PNG");
             if ((c.type & (1 << 29)) == 0) {
 #ifndef STBI_NO_FAILURE_STRINGS
+#if defined(STBI_FAILURE_USERMSG)
+				return stbi__err(NULL, "PNG not supported: unknown PNG chunk type");
+#else
                 // not threadsafe
                 static char invalid_chunk[] = "XXXX PNG chunk not known";
                 invalid_chunk[0] = STBI__BYTECAST(c.type >> 24);
                 invalid_chunk[1] = STBI__BYTECAST(c.type >> 16);
                 invalid_chunk[2] = STBI__BYTECAST(c.type >> 8);
                 invalid_chunk[3] = STBI__BYTECAST(c.type >> 0);
+                return stbi__err(invalid_chunk, NULL);
 #endif
-                return stbi__err(invalid_chunk, "PNG not supported: unknown PNG chunk type");
+#else
+				return 0;
+#endif
             }
             stbi__skip(s, c.length);
             break;
@@ -5169,7 +5175,7 @@ static int stbi__shiftsigned(unsigned int v, int shift, int bits)
         v <<= -shift;
     else
         v >>= shift;
-    STBI_ASSERT(v >= 0 && v < 256);
+    STBI_ASSERT(v < 256);
     v >>= (8 - bits);
     STBI_ASSERT(bits >= 0 && bits <= 8);
     return (int)((unsigned)v * mul_table[bits]) >> shift_table[bits];
