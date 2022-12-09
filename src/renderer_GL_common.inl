@@ -86,6 +86,8 @@ static_inline int c99_snprintf(char* str, size_t size, const char* format, ...)
 }
 #endif
 
+#define SNAP(x) roundf(x)
+
 int gpu_strcasecmp(const char* s1, const char* s2);
 
 
@@ -2319,6 +2321,7 @@ static GLuint CreateUninitializedTexture(GPU_Renderer* renderer)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 #if defined(SDL_GPU_USE_GLES) && (SDL_GPU_GLES_MAJOR_VERSION == 1)
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
@@ -4256,8 +4259,8 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
 	if (image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
 	{
 		// Avoid rounding errors in texture sampling by insisting on integral pixel positions
-		x = floorf(x);
-		y = floorf(y);
+		x = SNAP(x);
+		y = SNAP(y);
 	}
 
 	if (src_rect == NULL)
@@ -4299,10 +4302,10 @@ static void Blit(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* src_rect, G
 	if (image->snap_mode == GPU_SNAP_DIMENSIONS || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
 	{
 		float fractional;
-		fractional = w / 2.0f - floorf(w / 2.0f);
+		fractional = w / 2.0f - SNAP(w / 2.0f);
 		dx1 += fractional;
 		dx2 += fractional;
-		fractional = h / 2.0f - floorf(h / 2.0f);
+		fractional = h / 2.0f - SNAP(h / 2.0f);
 		dy1 += fractional;
 		dy2 += fractional;
 	}
@@ -4480,8 +4483,8 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
 	if (image->snap_mode == GPU_SNAP_POSITION || image->snap_mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
 	{
 		// Avoid rounding errors in texture sampling by insisting on integral pixel positions
-		x = floorf(x);
-		y = floorf(y);
+		x = SNAP(x);
+		y = SNAP(y);
 	}
 
 	/*
@@ -4530,10 +4533,10 @@ static void BlitTransformX(GPU_Renderer* renderer, GPU_Image* image, GPU_Rect* s
 	{
 		// This is a little weird for rotating sprites, but oh well.
 		float fractional;
-		fractional = w / 2.0f - floorf(w / 2.0f);
+		fractional = w / 2.0f - SNAP(w / 2.0f);
 		dx1 += fractional;
 		dx2 += fractional;
-		fractional = h / 2.0f - floorf(h / 2.0f);
+		fractional = h / 2.0f - SNAP(h / 2.0f);
 		dy1 += fractional;
 		dy2 += fractional;
 	}
@@ -5146,7 +5149,7 @@ static void PrimitiveBatchV(GPU_Renderer* renderer, GPU_Image* image, GPU_Target
 					glVertexAttribPointer(context->current_shader_block.color_loc, size_colors, GL_FLOAT, GL_FALSE, stride, (void*)(offset_colors));
 				}
 			}
-			else
+			else if (context->current_shader_block.color_loc >= 0)
 			{
 				SDL_Color color = get_complete_mod_color(renderer, target, image);
 				float default_color[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, GET_ALPHA(color) / 255.0f };
@@ -5194,7 +5197,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 	if (image->target != NULL && isCurrentTarget(renderer, image->target))
 		renderer->impl->FlushBlitBuffer(renderer);
 	bindTexture(renderer, image);
-	glGenerateMipmapPROC(GL_TEXTURE_2D);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	image->has_mipmaps = GPU_TRUE;
 
 	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
