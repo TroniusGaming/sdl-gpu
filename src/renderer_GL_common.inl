@@ -5197,7 +5197,7 @@ static void GenerateMipmaps(GPU_Renderer* renderer, GPU_Image* image)
 	if (image->target != NULL && isCurrentTarget(renderer, image->target))
 		renderer->impl->FlushBlitBuffer(renderer);
 	bindTexture(renderer, image);
-	glGenerateMipmap(GL_TEXTURE_2D);
+	glGenerateMipmapPROC(GL_TEXTURE_2D);
 	image->has_mipmaps = GPU_TRUE;
 
 	glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &filter);
