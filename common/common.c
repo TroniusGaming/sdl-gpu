@@ -16,9 +16,13 @@ void printRenderers(void)
     compiled = GPU_GetCompiledVersion();
     linked = GPU_GetLinkedVersion();
     if(compiled.major != linked.major || compiled.minor != linked.minor || compiled.patch != linked.patch)
+	{
         GPU_Log("SDL_gpu v%d.%d.%d (compiled with v%d.%d.%d)\n", linked.major, linked.minor, linked.patch, compiled.major, compiled.minor, compiled.patch);
+	}
     else
+	{
         GPU_Log("SDL_gpu v%d.%d.%d\n", linked.major, linked.minor, linked.patch);
+	}
     
 	renderers = (GPU_RendererID*)malloc(sizeof(GPU_RendererID)*GPU_GetNumRegisteredRenderers());
 	GPU_GetRegisteredRendererList(renderers);

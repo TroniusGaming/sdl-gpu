@@ -86,7 +86,7 @@ DemoFont* FONT_Alloc(SDL_Surface* source_surface)
     }
 
 
-    pixel = _GetPixel(source_surface, 0, source_surface->h - 1);
+    // pixel = _GetPixel(source_surface, 0, source_surface->h - 1);
     
     #ifdef SDL_GPU_USE_SDL2
     SDL_GetSurfaceBlendMode(source_surface, &blendMode);

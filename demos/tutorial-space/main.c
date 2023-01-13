@@ -27,16 +27,16 @@ Ship* create_ship(const char* image_file)
     if(ship == NULL)
         return NULL;
 
-	ship->image = GPU_LoadImage(image_file);
-	ship->pos_x = 0.0f;
-	ship->pos_y = 0.0f;
-	ship->vel_x = 0.0f;
-	ship->vel_y = 0.0f;
-	ship->angle = 0.0f;
-	ship->thrust = 500.0f;
-	ship->drag_coefficient = 0.00005f;
+    ship->image = GPU_LoadImage(image_file);
+    ship->pos_x = 0.0f;
+    ship->pos_y = 0.0f;
+    ship->vel_x = 0.0f;
+    ship->vel_y = 0.0f;
+    ship->angle = 0.0f;
+    ship->thrust = 500.0f;
+    ship->drag_coefficient = 0.00005f;
 
-	return ship;
+    return ship;
 }
 
 void free_ship(Ship* ship)
