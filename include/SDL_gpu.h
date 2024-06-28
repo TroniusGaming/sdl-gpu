@@ -94,6 +94,17 @@ extern "C" {
 #define GPU_PAD_5_TO_64 char _padding[1];
 #define GPU_PAD_6_TO_64 char _padding[2];
 #define GPU_PAD_7_TO_64 char _padding[3];
+
+#define GPU_PAD_INIT_1_TO_32 ,{0}
+#define GPU_PAD_INIT_2_TO_32 ,{0,0}
+#define GPU_PAD_INIT_3_TO_32 ,{0,0,0}
+#define GPU_PAD_INIT_1_TO_64 ,{0}
+#define GPU_PAD_INIT_2_TO_64 ,{0,0}
+#define GPU_PAD_INIT_3_TO_64 ,{0,0,0}
+#define GPU_PAD_INIT_4_TO_64
+#define GPU_PAD_INIT_5_TO_64 ,{0}
+#define GPU_PAD_INIT_6_TO_64 ,{0,0}
+#define GPU_PAD_INIT_7_TO_64 ,{0,0,0}
 #elif SDL_GPU_BITNESS == 64
 #define GPU_PAD_1_TO_32 char _padding[1];
 #define GPU_PAD_2_TO_32 char _padding[2];
@@ -105,6 +116,17 @@ extern "C" {
 #define GPU_PAD_5_TO_64 char _padding[5];
 #define GPU_PAD_6_TO_64 char _padding[6];
 #define GPU_PAD_7_TO_64 char _padding[7];
+
+#define GPU_PAD_INIT_1_TO_32 ,{0}
+#define GPU_PAD_INIT_2_TO_32 ,{0,0}
+#define GPU_PAD_INIT_3_TO_32 ,{0,0,0}
+#define GPU_PAD_INIT_1_TO_64 ,{0}
+#define GPU_PAD_INIT_2_TO_64 ,{0,0}
+#define GPU_PAD_INIT_3_TO_64 ,{0,0,0}
+#define GPU_PAD_INIT_4_TO_64 ,{0,0,0,0}
+#define GPU_PAD_INIT_5_TO_64 ,{0,0,0,0,0}
+#define GPU_PAD_INIT_6_TO_64 ,{0,0,0,0,0,0}
+#define GPU_PAD_INIT_7_TO_64 ,{0,0,0,0,0,0,0}
 #endif
 
 #define GPU_FALSE 0
