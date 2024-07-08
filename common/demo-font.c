@@ -11,7 +11,7 @@ static Uint32 _GetPixel(SDL_Surface *Surface, int x, int y)
     if(x < 0 || x >= Surface->w)
         return 0;  // Best I could do for errors
 
-    bpp = Surface->format->BytesPerPixel;
+    bpp = Surface->format->bytes_per_pixel;
     bits = ((Uint8*)Surface->pixels) + y*Surface->pitch + x*bpp;
 
     switch (bpp)

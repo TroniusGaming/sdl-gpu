@@ -143,7 +143,7 @@ static_inline void get_window_dimensions(SDL_Window* window, int* w, int* h)
 
 static_inline void get_drawable_dimensions(SDL_Window* window, int* w, int* h)
 {
-	SDL_GL_GetDrawableSize(window, w, h);
+	SDL_GetWindowSizeInPixels(window, w, h);
 }
 
 static_inline void resize_window(GPU_Target* target, int w, int h)
@@ -158,7 +158,7 @@ static_inline GPU_bool get_fullscreen_state(SDL_Window* window)
 
 static_inline GPU_bool has_colorkey(SDL_Surface* surface)
 {
-	return (SDL_GetColorKey(surface, NULL) == 0);
+	return (SDL_GetSurfaceColorKey(surface, NULL) == 0);
 }
 
 static_inline GPU_bool is_alpha_format(SDL_PixelFormat* format)
@@ -216,7 +216,7 @@ static_inline GPU_bool has_colorkey(SDL_Surface* surface)
 
 static_inline GPU_bool is_alpha_format(SDL_PixelFormat* format)
 {
-	return (format->BitsPerPixel == 32);    // Not great, as it misses many packed formats.  Might be the best we can do.
+	return (format->bits_per_pixel == 32);    // Not great, as it misses many packed formats.  Might be the best we can do.
 }
 
 #endif
@@ -1318,11 +1318,9 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
 		// Set up window flags
 		SDL_flags |= SDL_WINDOW_OPENGL;
-		if (!(SDL_flags & SDL_WINDOW_HIDDEN))
-			SDL_flags |= SDL_WINDOW_SHOWN;
 
 		renderer->SDL_init_flags = SDL_flags;
-		window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, win_w, win_h, SDL_flags);
+		window = SDL_CreateWindow("", win_w, win_h, SDL_flags);
 
 		if (window == NULL)
 		{
@@ -1579,7 +1577,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 	}
 
 	// We need a GL context before we can get the drawable size.
-	SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
+	SDL_GetWindowSizeInPixels(window, &target->context->drawable_w, &target->context->drawable_h);
 
 #else
 
@@ -2193,7 +2191,7 @@ static void Quit(GPU_Renderer* renderer)
 
 
 
-static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution)
+static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen)
 {
 	GPU_Target* target = renderer->current_context_target;
 
@@ -2207,10 +2205,7 @@ static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen
 
 	if (enable_fullscreen)
 	{
-		if (use_desktop_resolution)
-			flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
-		else
-			flags = SDL_WINDOW_FULLSCREEN;
+		flags = SDL_WINDOW_FULLSCREEN;
 	}
 
 	if (SDL_SetWindowFullscreen(window, flags) >= 0)
@@ -2859,7 +2854,7 @@ static GPU_bool SaveImage(GPU_Renderer* renderer, GPU_Image* image, const char* 
 
 	result = GPU_SaveSurface(surface, filename, format);
 
-	SDL_FreeSurface(surface);
+	SDL_DestroySurface(surface);
 	return result;
 }
 
@@ -2889,25 +2884,30 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
 	}
 
 	format = AllocFormat(((GPU_TARGET_DATA*)target->data)->format);
-
-	result = SDL_CreateRGBSurface(SDL_SWSURFACE, target->base_w, target->base_h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	result = SDL_CreateSurface(target->base_w, target->base_h, format->format);
+	if (format == NULL)
+	{
+		GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Failed to create pixel format from GL format %d", ((GPU_TARGET_DATA*)target->data)->format);
+		SDL_free(data);
+		return NULL;
+	}
 
 	if (result == NULL)
 	{
 		GPU_PushErrorCode("GPU_CopySurfaceFromTarget", GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", target->base_w, target->base_h);
 		SDL_free(data);
+		FreeFormat(format);
 		return NULL;
 	}
 
 	// Copy row-by-row in case the pitch doesn't match
 	{
 		int i;
-		int source_pitch = target->base_w * format->BytesPerPixel;
+		int source_pitch = target->base_w * format->bytes_per_pixel;
 		for (i = 0; i < target->base_h; ++i) { memcpy((Uint8*)result->pixels + i * result->pitch, data + source_pitch * i, source_pitch); }
 	}
 
 	SDL_free(data);
-
 	FreeFormat(format);
 	return result;
 }
@@ -2950,25 +2950,31 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 	}
 
 	format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
+	if (format == NULL)
+	{
+		GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Failed to create pixel format from GL format %d", ((GPU_IMAGE_DATA*)image->data)->format);
+		SDL_free(data);
+		return NULL;
+	}
 
-	result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	result = SDL_CreateSurface(w, h, format->format);
 
 	if (result == NULL)
 	{
 		GPU_PushErrorCode("GPU_CopySurfaceFromImage", GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", w, h);
 		SDL_free(data);
+		FreeFormat(format);
 		return NULL;
 	}
 
 	// Copy row-by-row in case the pitch doesn't match
 	{
 		int i;
-		int source_pitch = image->texture_w * format->BytesPerPixel;    // Use the actual texture width to pull from the data
+		int source_pitch = image->texture_w * format->bytes_per_pixel;    // Use the actual texture width to pull from the data
 		for (i = 0; i < h; ++i) { memcpy((Uint8*)result->pixels + i * result->pitch, data + source_pitch * i, result->pitch); }
 	}
 
 	SDL_free(data);
-
 	FreeFormat(format);
 	return result;
 }
@@ -2986,7 +2992,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 	{
 			// 3-channel formats
 		case GL_RGB:
-			if (format->BytesPerPixel != 3)
+			if (format->bytes_per_pixel != 3)
 				return 1;
 
 			if (format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
@@ -3009,7 +3015,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 			return 1;
 			// 4-channel formats
 		case GL_RGBA:
-			if (format->BytesPerPixel != 4)
+			if (format->bytes_per_pixel != 4)
 				return 1;
 
 			if (format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
@@ -3053,7 +3059,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 	{
 			// 3-channel formats
 		case GL_RGB:
-			if (format->BytesPerPixel != 3)
+			if (format->bytes_per_pixel != 3)
 				return 1;
 
 			// Looks like RGB?  Easy!
@@ -3080,7 +3086,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 			// 4-channel formats
 		case GL_RGBA:
 
-			if (format->BytesPerPixel != 4)
+			if (format->bytes_per_pixel != 4)
 				return 1;
 
 			// Looks like RGBA?  Easy!
@@ -3127,8 +3133,7 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
 	// Yes, I need to do the whole thing myself... :(
 	Uint8 channels;
-	Uint32 Rmask, Gmask, Bmask, Amask = 0, mask;
-	SDL_PixelFormat* result;
+	Uint32 Rmask, Gmask, Bmask, Amask = 0;
 
 	switch (glFormat)
 	{
@@ -3176,54 +3181,12 @@ static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 
 	// GPU_LogError("AllocFormat(): %d, Masks: %X %X %X %X\n", glFormat, Rmask, Gmask, Bmask, Amask);
 
-	result = (SDL_PixelFormat*)SDL_malloc(sizeof(SDL_PixelFormat));
-	memset(result, 0, sizeof(SDL_PixelFormat));
-
-	result->BitsPerPixel = 8 * channels;
-	result->BytesPerPixel = channels;
-
-	result->Rmask = Rmask;
-	result->Rshift = 0;
-	result->Rloss = 8;
-	if (Rmask)
-	{
-		for (mask = Rmask; !(mask & 0x01); mask >>= 1) ++result->Rshift;
-		for (; (mask & 0x01); mask >>= 1) --result->Rloss;
-	}
-
-	result->Gmask = Gmask;
-	result->Gshift = 0;
-	result->Gloss = 8;
-	if (Gmask)
-	{
-		for (mask = Gmask; !(mask & 0x01); mask >>= 1) ++result->Gshift;
-		for (; (mask & 0x01); mask >>= 1) --result->Gloss;
-	}
-
-	result->Bmask = Bmask;
-	result->Bshift = 0;
-	result->Bloss = 8;
-	if (Bmask)
-	{
-		for (mask = Bmask; !(mask & 0x01); mask >>= 1) ++result->Bshift;
-		for (; (mask & 0x01); mask >>= 1) --result->Bloss;
-	}
-
-	result->Amask = Amask;
-	result->Ashift = 0;
-	result->Aloss = 8;
-	if (Amask)
-	{
-		for (mask = Amask; !(mask & 0x01); mask >>= 1) ++result->Ashift;
-		for (; (mask & 0x01); mask >>= 1) --result->Aloss;
-	}
-
-	return result;
+	return SDL_CreatePixelFormat(SDL_GetPixelFormatEnumForMasks(8 * channels, Rmask, Gmask, Bmask, Amask));
 }
 
 static void FreeFormat(SDL_PixelFormat* format)
 {
-	SDL_free(format);
+	SDL_DestroyPixelFormat(format);
 }
 
 
@@ -3243,7 +3206,7 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
 	{
 		// Convert to the right format
 		SDL_PixelFormat* dst_fmt = AllocFormat(glFormat);
-		surface = SDL_ConvertSurface(surface, dst_fmt, 0);
+		surface = SDL_ConvertSurface(surface, dst_fmt);
 		FreeFormat(dst_fmt);
 		if (surfaceFormatResult != NULL && surface != NULL)
 			*surfaceFormatResult = glFormat;
@@ -3510,14 +3473,14 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
 
 	pixels = (Uint8*)newSurface->pixels;
 	// Shift the pixels pointer to the proper source position
-	pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel) * sourceRect.x);
+	pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->bytes_per_pixel) * sourceRect.x);
 
-	upload_texture(pixels, updateRect, original_format, alignment, newSurface->pitch / newSurface->format->BytesPerPixel, newSurface->pitch,
-	               newSurface->format->BytesPerPixel);
+	upload_texture(pixels, updateRect, original_format, alignment, newSurface->pitch / newSurface->format->bytes_per_pixel, newSurface->pitch,
+	               newSurface->format->bytes_per_pixel);
 
 	// Delete temporary surface
 	if (surface != newSurface)
-		SDL_FreeSurface(newSurface);
+		SDL_DestroySurface(newSurface);
 }
 
 
@@ -3710,15 +3673,15 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
 
 	pixels = (Uint8*)newSurface->pixels;
 	// Shift the pixels pointer to the proper source position
-	pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel) * sourceRect.x);
+	pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->bytes_per_pixel) * sourceRect.x);
 
-	upload_new_texture(pixels, GPU_MakeRect(0, 0, (float)w, (float)h), internal_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel),
-	                   newSurface->format->BytesPerPixel);
+	upload_new_texture(pixels, GPU_MakeRect(0, 0, (float)w, (float)h), internal_format, alignment, (newSurface->pitch / newSurface->format->bytes_per_pixel),
+	                   newSurface->format->bytes_per_pixel);
 
 
 	// Delete temporary surface
 	if (surface != newSurface)
-		SDL_FreeSurface(newSurface);
+		SDL_DestroySurface(newSurface);
 
 
 
@@ -3773,7 +3736,7 @@ static_inline Uint32 getPixel(SDL_Surface* Surface, int x, int y)
 	if (x < 0 || x >= Surface->w)
 		return 0;    // Best I could do for errors
 
-	bpp = Surface->format->BytesPerPixel;
+	bpp = Surface->format->bytes_per_pixel;
 	bits = ((Uint8*)Surface->pixels) + y * Surface->pitch + x * bpp;
 
 	switch (bpp)
@@ -3855,7 +3818,7 @@ static GPU_Image* CopyImageFromTarget(GPU_Renderer* renderer, GPU_Target* target
 	{
 		SDL_Surface* surface = renderer->impl->CopySurfaceFromTarget(renderer, target);
 		result = renderer->impl->CopyImageFromSurface(renderer, surface, NULL);
-		SDL_FreeSurface(surface);
+		SDL_DestroySurface(surface);
 	}
 
 	return result;
@@ -5764,10 +5727,10 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 static Uint32 GetShaderSourceSize(const char* filename);
 static Uint32 GetShaderSource(const char* filename, char* result);
 
-static void read_until_end_of_comment(SDL_RWops* rwops, char multiline)
+static void read_until_end_of_comment(SDL_IOStream* rwops, char multiline)
 {
 	char buffer;
-	while (SDL_RWread(rwops, &buffer, 1, 1) > 0)
+	while (SDL_ReadIO(rwops, &buffer, 1) > 0)
 	{
 		if (!multiline)
 		{
@@ -5779,14 +5742,14 @@ static void read_until_end_of_comment(SDL_RWops* rwops, char multiline)
 			if (buffer == '*')
 			{
 				// If the stream ends at the next character or it is a '/', then we're done.
-				if (SDL_RWread(rwops, &buffer, 1, 1) <= 0 || buffer == '/')
+				if (SDL_ReadIO(rwops, &buffer, 1) <= 0 || buffer == '/')
 					break;
 			}
 		}
 	}
 }
 
-static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
+static Uint32 GetShaderSourceSize_RW(SDL_IOStream* shader_source)
 {
 	Uint32 size;
 	char last_char;
@@ -5801,7 +5764,7 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 	// Read 1 byte at a time until we reach the end
 	last_char = ' ';
 	len = 0;
-	while ((len = SDL_RWread(shader_source, &buffer, 1, 1)) > 0)
+	while ((len = SDL_ReadIO(shader_source, &buffer, 1)) > 0)
 	{
 		// Follow through an #include directive?
 		if (buffer[0] == '#')
@@ -5810,7 +5773,7 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 			int line_size = 1;
 			unsigned long line_len;
 			char* token;
-			while ((line_len = SDL_RWread(shader_source, buffer + line_size, 1, 1)) > 0)
+			while ((line_len = SDL_ReadIO(shader_source, buffer + line_size, 1)) > 0)
 			{
 				line_size += line_len;
 				if (buffer[line_size - line_len] == '\n')
@@ -5858,12 +5821,12 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 	}
 
 	// Go back to the beginning of the stream
-	SDL_RWseek(shader_source, 0, SEEK_SET);
+	SDL_SeekIO(shader_source, 0, SEEK_SET);
 	return size;
 }
 
 
-static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
+static Uint32 GetShaderSource_RW(SDL_IOStream* shader_source, char* result)
 {
 	Uint32 size;
 	char last_char;
@@ -5881,7 +5844,7 @@ static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
 	// Read 1 byte at a time until we reach the end
 	last_char = ' ';
 	len = 0;
-	while ((len = SDL_RWread(shader_source, &buffer, 1, 1)) > 0)
+	while ((len = SDL_ReadIO(shader_source, &buffer, 1)) > 0)
 	{
 		// Follow through an #include directive?
 		if (buffer[0] == '#')
@@ -5891,7 +5854,7 @@ static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
 			unsigned long line_len;
 			char token_buffer[512];    // strtok() is destructive
 			char* token;
-			while ((line_len = SDL_RWread(shader_source, buffer + line_size, 1, 1)) > 0)
+			while ((line_len = SDL_ReadIO(shader_source, buffer + line_size, 1)) > 0)
 			{
 				line_size += line_len;
 				if (buffer[line_size - line_len] == '\n')
@@ -5949,37 +5912,37 @@ static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
 	result[size] = '\0';
 
 	// Go back to the beginning of the stream
-	SDL_RWseek(shader_source, 0, SEEK_SET);
+	SDL_SeekIO(shader_source, 0, SEEK_SET);
 	return size;
 }
 
 static Uint32 GetShaderSource(const char* filename, char* result)
 {
-	SDL_RWops* rwops;
+	SDL_IOStream* rwops;
 	Uint32 size;
 
 	if (filename == NULL)
 		return 0;
-	rwops = SDL_RWFromFile(filename, "r");
+	rwops = SDL_IOFromFile(filename, "r");
 
 	size = GetShaderSource_RW(rwops, result);
 
-	SDL_RWclose(rwops);
+	SDL_CloseIO(rwops);
 	return size;
 }
 
 static Uint32 GetShaderSourceSize(const char* filename)
 {
-	SDL_RWops* rwops;
+	SDL_IOStream* rwops;
 	Uint32 result;
 
 	if (filename == NULL)
 		return 0;
-	rwops = SDL_RWFromFile(filename, "r");
+	rwops = SDL_IOFromFile(filename, "r");
 
 	result = GetShaderSourceSize_RW(rwops);
 
-	SDL_RWclose(rwops);
+	SDL_CloseIO(rwops);
 	return result;
 }
 
@@ -6037,7 +6000,7 @@ static Uint32 compile_shader_source(GPU_ShaderEnum shader_type, const char* shad
 }
 
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, GPU_bool free_rwops)
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_IOStream* shader_source, GPU_bool free_rwops)
 {
 	// Read in the shader source code
 	Uint32 size = GetShaderSourceSize_RW(shader_source);
@@ -6047,7 +6010,7 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_typ
 	(void)renderer;
 
 	if (free_rwops)
-		SDL_RWclose(shader_source);
+		SDL_CloseIO(shader_source);
 
 	if (!result)
 	{
@@ -6066,10 +6029,10 @@ static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_typ
 static Uint32 CompileShader(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source)
 {
 	Uint32 size = (Uint32)strlen(shader_source);
-	SDL_RWops* rwops;
+	SDL_IOStream* rwops;
 	if (size == 0)
 		return 0;
-	rwops = SDL_RWFromConstMem(shader_source, size);
+	rwops = SDL_IOFromConstMem(shader_source, size);
 	return renderer->impl->CompileShader_RW(renderer, shader_type, rwops, 1);
 }
 

@@ -15,7 +15,7 @@ Here's an example command line invokation of CMake for SDL_gpu.  You may need to
 
 mkdir ios-build
 cd ios-build
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/ios-cmake/toolchain/iOS.cmake -DCMAKE_IOS_SDK_ROOT=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk -DSDL2_LIBRARY=../../SDL2/lib/ios/libSDL2.a -DSDL2_INCLUDE_DIR=../../SDL2/include/SDL2 .. -G "Xcode"
+cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/ios-cmake/toolchain/iOS.cmake -DCMAKE_IOS_SDK_ROOT=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk -DSDL2_LIBRARY=../../SDL3/lib/ios/libSDL2.a -DSDL2_INCLUDE_DIR=../../SDL3/include/SDL2 .. -G "Xcode"
 
 The settings in CMakeLists.txt will automatically pick the OpenGL ES renderers for you.  It will also disable building of the demos and tools.
 

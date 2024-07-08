@@ -109,7 +109,7 @@ GPU_Target* initialize_demo(int argc, char** argv, Uint16 w, Uint16 h)
 // Therefore, I need to prepend the version info here so I can support both GLSL and GLSLES with one shader file.
 Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
 {
-    SDL_RWops* rwops;
+    SDL_IOStream* rwops;
     Uint32 shader;
     char* source;
     int header_size, file_size;
@@ -117,7 +117,7 @@ Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
     GPU_Renderer* renderer = GPU_GetCurrentRenderer();
     
     // Open file
-    rwops = SDL_RWFromFile(filename, "rb");
+    rwops = SDL_IOFromFile(filename, "rb");
     if(rwops == NULL)
     {
         GPU_PushErrorCode("load_shader", GPU_ERROR_FILE_NOT_FOUND, "Shader file \"%s\" not found", filename);
@@ -125,8 +125,8 @@ Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
     }
     
     // Get file size
-    file_size = SDL_RWseek(rwops, 0, SEEK_END);
-    SDL_RWseek(rwops, 0, SEEK_SET);
+    file_size = SDL_SeekIO(rwops, 0, SEEK_END);
+    SDL_SeekIO(rwops, 0, SEEK_SET);
     
     // Get size from header
     if(renderer->shader_language == GPU_LANGUAGE_GLSL)
@@ -148,7 +148,7 @@ Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
     strcpy(source, header);
     
     // Read in source code
-    SDL_RWread(rwops, source + strlen(source), 1, file_size);
+    SDL_ReadIO(rwops, source + strlen(source), file_size);
     source[header_size + file_size] = '\0';
     
     // Compile the shader
@@ -156,7 +156,7 @@ Uint32 load_shader(GPU_ShaderEnum shader_type, const char* filename)
     
     // Clean up
     free(source);
-    SDL_RWclose(rwops);
+    SDL_CloseIO(rwops);
     
     return shader;
 }

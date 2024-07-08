@@ -8,9 +8,9 @@ extern "C" {
 #endif
 
 // Internal API for managing window mappings
-DECLSPEC void SDLCALL GPU_AddWindowMapping(GPU_Target* target);
-DECLSPEC void SDLCALL GPU_RemoveWindowMapping(Uint32 windowID);
-DECLSPEC void SDLCALL GPU_RemoveWindowMappingByTarget(GPU_Target* target);
+SDL_DECLSPEC void SDLCALL GPU_AddWindowMapping(GPU_Target* target);
+SDL_DECLSPEC void SDLCALL GPU_RemoveWindowMapping(Uint32 windowID);
+SDL_DECLSPEC void SDLCALL GPU_RemoveWindowMappingByTarget(GPU_Target* target);
 
 /*! Private implementation of renderer members. */
 typedef struct GPU_RendererImpl
@@ -56,7 +56,7 @@ typedef struct GPU_RendererImpl
 	void (SDLCALL *Quit)(GPU_Renderer* renderer);
 	
 	/*! \see GPU_SetFullscreen() */
-	GPU_bool (SDLCALL *SetFullscreen)(GPU_Renderer* renderer, GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution);
+	GPU_bool (SDLCALL *SetFullscreen)(GPU_Renderer* renderer, GPU_bool enable_fullscreen);
 
 	/*! \see GPU_SetCamera() */
 	GPU_Camera (SDLCALL *SetCamera)(GPU_Renderer* renderer, GPU_Target* target, GPU_Camera* cam);
@@ -160,7 +160,7 @@ typedef struct GPU_RendererImpl
 	void (SDLCALL *FreeShaderProgram)(GPU_Renderer* renderer, Uint32 program_object);
 	
     /*! \see GPU_CompileShader_RW() */
-	Uint32 (SDLCALL *CompileShader_RW)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, GPU_bool free_rwops);
+	Uint32 (SDLCALL *CompileShader_RW)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_IOStream* shader_source, GPU_bool free_rwops);
 	
     /*! \see GPU_CompileShader() */
 	Uint32 (SDLCALL *CompileShader)(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, const char* shader_source);

@@ -14,7 +14,7 @@ void set_pixel(SDL_Surface* surface, int x, int y, Uint32 color)
     if(surface == NULL || x < 0 || y < 0 || x >= surface->w || y >= surface->h)
         return;
 
-    bpp = surface->format->BytesPerPixel;
+    bpp = surface->format->bytes_per_pixel;
     bits = ((Uint8 *)surface->pixels) + y*surface->pitch + x*bpp;
 
     /* Set the pixel */

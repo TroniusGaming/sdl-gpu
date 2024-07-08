@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_gpu.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_gpu.h>
 
 #define GLEW_STATIC // needed for windows only(?)
 #include <GL/glew.h>

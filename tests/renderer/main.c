@@ -318,7 +318,7 @@ static void Quit(GPU_Renderer* renderer)
 }
 
 
-static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution)
+static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen)
 {
     GPU_Target* target = renderer->current_context_target;
     
@@ -865,7 +865,7 @@ static void FreeShaderProgram(GPU_Renderer* renderer, Uint32 program_object)
     GPU_Log(" %s (dummy)\n", __func__);
 }
 
-static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_RWops* shader_source, GPU_bool free_rwops)
+static Uint32 CompileShader_RW(GPU_Renderer* renderer, GPU_ShaderEnum shader_type, SDL_IOStream* shader_source, GPU_bool free_rwops)
 {
     GPU_Log(" %s (dummy)\n", __func__);
     

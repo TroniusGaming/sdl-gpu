@@ -13,7 +13,7 @@ void makeColorTransparent(GPU_Image* image, SDL_Color color)
     {
         for(x = 0; x < surface->w; x++)
         {
-            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            i = y*surface->pitch + x*surface->format->bytes_per_pixel;
             if(pixels[i] == color.r && pixels[i+1] == color.g && pixels[i+2] == color.b)
                 pixels[i+3] = 0;
         }
@@ -33,7 +33,7 @@ void replaceColor(GPU_Image* image, SDL_Color from, SDL_Color to)
     {
         for(x = 0; x < surface->w; x++)
         {
-            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            i = y*surface->pitch + x*surface->format->bytes_per_pixel;
             if(pixels[i] == from.r && pixels[i+1] == from.g && pixels[i+2] == from.b)
             {
                 pixels[i] = to.r;
@@ -162,9 +162,9 @@ void shiftHSV(GPU_Image* image, int hue, int saturation, int value)
     {
         for(x = 0; x < surface->w; x++)
         {
-            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            i = y*surface->pitch + x*surface->format->bytes_per_pixel;
             
-            if(surface->format->BytesPerPixel == 4 && pixels[i+3] == 0)
+            if(surface->format->bytes_per_pixel == 4 && pixels[i+3] == 0)
                 continue;
 
             r = pixels[i];
@@ -207,9 +207,9 @@ void shiftHSVExcept(GPU_Image* image, int hue, int saturation, int value, int no
     {
         for(x = 0; x < surface->w; x++)
         {
-            i = y*surface->pitch + x*surface->format->BytesPerPixel;
+            i = y*surface->pitch + x*surface->format->bytes_per_pixel;
             
-            if(surface->format->BytesPerPixel == 4 && pixels[i+3] == 0)
+            if(surface->format->bytes_per_pixel == 4 && pixels[i+3] == 0)
                 continue;
 
             r = pixels[i];

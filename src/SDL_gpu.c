@@ -78,7 +78,7 @@ static GPU_bool _gpu_initialized_SDL = GPU_FALSE;
 static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
 
 
-SDL_version GPU_GetLinkedVersion(void)
+int GPU_GetLinkedVersion(void)
 {
     return GPU_GetCompiledVersion();
 }
@@ -124,7 +124,7 @@ Uint32 GPU_GetCurrentShaderProgram(void)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return 0;
-    
+
     return _gpu_current_renderer->current_context_target->context->current_shader_program;
 }
 
@@ -190,7 +190,7 @@ static GPU_bool gpu_init_SDL(void)
 {
     if(!_gpu_initialized_SDL)
     {
-        if(!_gpu_initialized_SDL_core && !SDL_WasInit(SDL_INIT_EVERYTHING))
+        if(!_gpu_initialized_SDL_core && !SDL_WasInit(SDL_INIT_VIDEO))
         {
             // Nothing has been set up, so init SDL and the video subsystem.
             if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -509,12 +509,12 @@ void GPU_MakeCurrent(GPU_Target* target, Uint32 windowID)
     _gpu_current_renderer->impl->MakeCurrent(_gpu_current_renderer, target, windowID);
 }
 
-GPU_bool GPU_SetFullscreen(GPU_bool enable_fullscreen, GPU_bool use_desktop_resolution)
+GPU_bool GPU_SetFullscreen(GPU_bool enable_fullscreen)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return GPU_FALSE;
 
-    return _gpu_current_renderer->impl->SetFullscreen(_gpu_current_renderer, enable_fullscreen, use_desktop_resolution);
+    return _gpu_current_renderer->impl->SetFullscreen(_gpu_current_renderer, enable_fullscreen);
 }
 
 GPU_bool GPU_GetFullscreen(void)
@@ -524,7 +524,7 @@ GPU_bool GPU_GetFullscreen(void)
     if(target == NULL)
         return GPU_FALSE;
     return (SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
-                   & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0;
+                   & SDL_WINDOW_FULLSCREEN) != 0;
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
     if(surf == NULL)
@@ -865,7 +865,7 @@ void GPU_GetVirtualCoords(GPU_Target* target, float* x, float* y, float displayX
         if(y != NULL)
             *y = displayY;
     }
-    
+
     // Invert coordinates to math coords
     if(_gpu_current_renderer->coordinate_mode)
         *y = target->h - *y;
@@ -973,16 +973,16 @@ GPU_Image* GPU_CreateImageUsingTexture(GPU_TextureHandle handle, GPU_bool take_o
 
 GPU_Image* GPU_LoadImage(const char* filename)
 {
-    return GPU_LoadImage_RW(SDL_RWFromFile(filename, "r"), 1);
+    return GPU_LoadImage_RW(SDL_IOFromFile(filename, "r"), 1);
 }
 
-GPU_Image* GPU_LoadImage_RW(SDL_RWops* rwops, GPU_bool free_rwops)
+GPU_Image* GPU_LoadImage_RW(SDL_IOStream* rwops, GPU_bool free_rwops)
 {
 	GPU_Image* result;
 	SDL_Surface* surface;
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
         return NULL;
-        
+
     surface = GPU_LoadSurface_RW(rwops, free_rwops);
     if(surface == NULL)
     {
@@ -991,7 +991,7 @@ GPU_Image* GPU_LoadImage_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     }
 
     result = _gpu_current_renderer->impl->CopyImageFromSurface(_gpu_current_renderer, surface, NULL);
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
 
     return result;
 }
@@ -1012,7 +1012,7 @@ GPU_bool GPU_SaveImage(GPU_Image* image, const char* filename, GPU_FileFormatEnu
     return _gpu_current_renderer->impl->SaveImage(_gpu_current_renderer, image, filename, format);
 }
 
-GPU_bool GPU_SaveImage_RW(GPU_Image* image, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
+GPU_bool GPU_SaveImage_RW(GPU_Image* image, SDL_IOStream* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
 {
     GPU_bool result;
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
@@ -1020,7 +1020,7 @@ GPU_bool GPU_SaveImage_RW(GPU_Image* image, SDL_RWops* rwops, GPU_bool free_rwop
 
     SDL_Surface* surface = GPU_CopySurfaceFromImage(image);
     result = GPU_SaveSurface_RW(surface, rwops, free_rwops, format);
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
     return result;
 }
 
@@ -1059,15 +1059,14 @@ GPU_bool GPU_ReplaceImage(GPU_Image* image, SDL_Surface* surface, const GPU_Rect
 static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, int height, int channels)
 {
     int i;
-    Uint32 Rmask, Gmask, Bmask, Amask = 0;
-    SDL_Surface* result;
-    
+    Uint32 Rmask = 0, Gmask = 0, Bmask = 0, Amask = 0;
+
     if(data == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Got NULL data");
         return NULL;
     }
-    
+
     switch(channels)
     {
     case 1:
@@ -1108,8 +1107,9 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         break;
     }
 
-    result = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, channels*8, Rmask, Gmask, Bmask, Amask);
-    //result = SDL_CreateRGBSurfaceFrom(data, width, height, channels * 8, width * channels, Rmask, Gmask, Bmask, Amask);
+    // result = SDL_CreateSurface(SDL_SWSURFACE, width, height, channels*8, Rmask, Gmask, Bmask, Amask);
+	SDL_Surface* result = SDL_CreateSurface(width, height, SDL_GetPixelFormatEnumForMasks(channels*8, Rmask, Gmask, Bmask, Amask));
+    // result = SDL_CreateSurfaceFrom(data, width, height, channels * 8, width * channels, Rmask, Gmask, Bmask, Amask);
     if(result == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Failed to create new %dx%d surface", width, height);
@@ -1121,7 +1121,7 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
     {
         memcpy((Uint8*)result->pixels + i*result->pitch, data + channels*width*i, channels*width);
     }
-    
+
     if(result != NULL && result->format->palette != NULL)
     {
         // SDL_CreateRGBSurface has no idea what palette to use, so it uses a blank one.
@@ -1141,16 +1141,16 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         SDL_SetPalette(result, SDL_LOGPAL, colors, 0, 256);
 #endif
     }
-    
+
     return result;
 }
 
-SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
+SDL_Surface* GPU_LoadSurface_RW(SDL_IOStream* rwops, GPU_bool free_rwops)
 {
     int width, height, channels;
     unsigned char* data;
     SDL_Surface* result;
-    
+
     int data_bytes;
     unsigned char* c_data;
 
@@ -1161,21 +1161,21 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     }
 
     // Get count of bytes
-    SDL_RWseek(rwops, 0, SEEK_SET);
-    data_bytes = (int)SDL_RWseek(rwops, 0, SEEK_END);
-    SDL_RWseek(rwops, 0, SEEK_SET);
-    
+    SDL_SeekIO(rwops, 0, SEEK_SET);
+    data_bytes = (int)SDL_SeekIO(rwops, 0, SEEK_END);
+    SDL_SeekIO(rwops, 0, SEEK_SET);
+
     // Read in the rwops data
     c_data = (unsigned char*)SDL_malloc(data_bytes);
-    SDL_RWread(rwops, c_data, 1, data_bytes);
-    
+    SDL_ReadIO(rwops, c_data, data_bytes);
+
     // Load image
     data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
-    
+
     // Clean up temp data
     SDL_free(c_data);
     if(free_rwops)
-        SDL_RWclose(rwops);
+        SDL_CloseIO(rwops);
 
     if(data == NULL)
     {
@@ -1193,7 +1193,7 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
 
 SDL_Surface* GPU_LoadSurface(const char* filename)
 {
-    return GPU_LoadSurface_RW(SDL_RWFromFile(filename, "r"), 1);
+    return GPU_LoadSurface_RW(SDL_IOFromFile(filename, "r"), 1);
 }
 
 // From http://stackoverflow.com/questions/5309471/getting-file-extension-in-c
@@ -1238,13 +1238,13 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
     switch(format)
     {
     case GPU_FILE_PNG:
-        result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
+        result = (stbi_write_png(filename, surface->w, surface->h, surface->format->bytes_per_pixel, (const unsigned char *const)data, 0) > 0);
         break;
     case GPU_FILE_BMP:
-        result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
+        result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->bytes_per_pixel, (void*)data) > 0);
         break;
     case GPU_FILE_TGA:
-        result = (stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
+        result = (stbi_write_tga(filename, surface->w, surface->h, surface->format->bytes_per_pixel, (void*)data) > 0);
         break;
     default:
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
@@ -1257,10 +1257,10 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
 
 static void write_func(void *context, void *data, int size)
 {
-    SDL_RWwrite((SDL_RWops*)context, data, 1, size);
+    SDL_WriteIO((SDL_IOStream*)context, data, size);
 }
 
-GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
+GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_IOStream* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
 {
     GPU_bool result;
     unsigned char* data;
@@ -1283,13 +1283,13 @@ GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool fre
     switch(format)
     {
     case GPU_FILE_PNG:
-        result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, surface->pitch) > 0);
+        result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, surface->format->bytes_per_pixel, (const unsigned char *const)data, surface->pitch) > 0);
         break;
     case GPU_FILE_BMP:
-        result = (stbi_write_bmp_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
+        result = (stbi_write_bmp_to_func(write_func, rwops, surface->w, surface->h, surface->format->bytes_per_pixel, (const unsigned char *const)data) > 0);
         break;
     case GPU_FILE_TGA:
-        result = (stbi_write_tga_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
+        result = (stbi_write_tga_to_func(write_func, rwops, surface->w, surface->h, surface->format->bytes_per_pixel, (const unsigned char *const)data) > 0);
         break;
     default:
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
@@ -1298,7 +1298,7 @@ GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool fre
     }
 
     if(result && free_rwops)
-        SDL_RWclose(rwops);
+        SDL_CloseIO(rwops);
     return result;
 }
 
@@ -1369,10 +1369,10 @@ GPU_Target* GPU_GetContextTarget(void)
 GPU_Target* GPU_LoadTarget(GPU_Image* image)
 {
 	GPU_Target* result = GPU_GetTarget(image);
-	
+
 	if(result != NULL)
         result->refcount++;
-    
+
     return result;
 }
 
@@ -1482,10 +1482,10 @@ void GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_
 {
     float w = 0.0f;
     float h = 0.0f;
-    
+
     if(image == NULL)
         return;
-    
+
     if(src_rect == NULL)
     {
         w = image->w;
@@ -1496,7 +1496,7 @@ void GPU_BlitRect(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU_
         w = src_rect->w;
         h = src_rect->h;
     }
-    
+
     GPU_BlitRectX(image, src_rect, target, dest_rect, 0.0f, w*0.5f, h*0.5f, GPU_FLIP_NONE);
 }
 
@@ -1506,10 +1506,10 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
     float dx, dy;
     float dw, dh;
     float scale_x, scale_y;
-    
+
     if(image == NULL || target == NULL)
         return;
-    
+
     if(src_rect == NULL)
     {
         w = image->w;
@@ -1520,7 +1520,7 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
         w = src_rect->w;
         h = src_rect->h;
     }
-    
+
     if(dest_rect == NULL)
     {
         dx = 0.0f;
@@ -1535,10 +1535,10 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
         dw = dest_rect->w;
         dh = dest_rect->h;
     }
-    
+
     scale_x = dw / w;
     scale_y = dh / h;
-    
+
     if(flip_direction & GPU_FLIP_HORIZONTAL)
     {
         scale_x = -scale_x;
@@ -1551,7 +1551,7 @@ void GPU_BlitRectX(GPU_Image* image, GPU_Rect* src_rect, GPU_Target* target, GPU
         dy += dh;
         pivot_y = h - pivot_y;
     }
-    
+
     GPU_BlitTransformX(image, src_rect, target, dx + pivot_x * scale_x, dy + pivot_y * scale_y, pivot_x, pivot_y, degrees, scale_x, scale_y);
 }
 
@@ -1652,10 +1652,10 @@ GPU_bool GPU_IntersectRect(GPU_Rect A, GPU_Rect B, GPU_Rect* result)
         Amin = Bmin;
     if (Bmax < Amax)
         Amax = Bmax;
-    
+
     intersection.x = Amin;
     intersection.w = Amax - Amin;
-    
+
     has_horiz_intersection = (Amax > Amin);
 
     // Vertical intersection
@@ -1667,10 +1667,10 @@ GPU_bool GPU_IntersectRect(GPU_Rect A, GPU_Rect B, GPU_Rect* result)
         Amin = Bmin;
     if (Bmax < Amax)
         Amax = Bmax;
-    
+
     intersection.y = Amin;
     intersection.h = Amax - Amin;
-    
+
     if(has_horiz_intersection && Amax > Amin)
     {
         if(result != NULL)
@@ -1686,13 +1686,13 @@ GPU_bool GPU_IntersectClipRect(GPU_Target* target, GPU_Rect B, GPU_Rect* result)
 {
     if(target == NULL)
         return GPU_FALSE;
-    
+
     if(!target->use_clip_rect)
     {
         GPU_Rect A = {0, 0, target->w, target->h};
         return GPU_IntersectRect(A, B, result);
     }
-    
+
     return GPU_IntersectRect(target->clip_rect, B, result);
 }
 
@@ -1984,7 +1984,7 @@ void GPU_SetDefaultAnchor(float anchor_x, float anchor_y)
 {
     if(_gpu_current_renderer == NULL)
         return;
-    
+
     _gpu_current_renderer->default_image_anchor_x = anchor_x;
     _gpu_current_renderer->default_image_anchor_y = anchor_y;
 }
@@ -1993,10 +1993,10 @@ void GPU_GetDefaultAnchor(float* anchor_x, float* anchor_y)
 {
     if(_gpu_current_renderer == NULL)
         return;
-    
+
     if(anchor_x != NULL)
         *anchor_x = _gpu_current_renderer->default_image_anchor_x;
-    
+
     if(anchor_y != NULL)
         *anchor_y = _gpu_current_renderer->default_image_anchor_y;
 }
@@ -2014,10 +2014,10 @@ void GPU_GetAnchor(GPU_Image* image, float* anchor_x, float* anchor_y)
 {
     if(image == NULL)
         return;
-    
+
     if(anchor_x != NULL)
         *anchor_x = image->anchor_x;
-    
+
     if(anchor_y != NULL)
         *anchor_y = image->anchor_y;
 }
@@ -2129,13 +2129,13 @@ void GPU_Flip(GPU_Target* target)
 {
     if(!CHECK_RENDERER)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL renderer");
-    
+
     if(target != NULL && target->context == NULL)
     {
         _gpu_current_renderer->impl->FlushBlitBuffer(_gpu_current_renderer);
         return;
     }
-    
+
     MAKE_CURRENT_IF_NONE(target);
     if(!CHECK_CONTEXT)
         RETURN_ERROR(GPU_ERROR_USER_ERROR, "NULL context");
@@ -2150,12 +2150,12 @@ void GPU_Flip(GPU_Target* target)
 // Shader API
 
 
-Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source, GPU_bool free_rwops)
+Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_IOStream* shader_source, GPU_bool free_rwops)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
     {
         if(free_rwops)
-            SDL_RWclose(shader_source);
+            SDL_CloseIO(shader_source);
         return GPU_FALSE;
     }
 
@@ -2164,21 +2164,21 @@ Uint32 GPU_CompileShader_RW(GPU_ShaderEnum shader_type, SDL_RWops* shader_source
 
 Uint32 GPU_LoadShader(GPU_ShaderEnum shader_type, const char* filename)
 {
-    SDL_RWops* rwops;
+    SDL_IOStream* rwops;
 
     if(filename == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_NULL_ARGUMENT, "filename");
         return 0;
     }
-    
-    rwops = SDL_RWFromFile(filename, "r");
+
+    rwops = SDL_IOFromFile(filename, "r");
     if(rwops == NULL)
     {
         GPU_PushErrorCode(__func__, GPU_ERROR_FILE_NOT_FOUND, "%s", filename);
         return 0;
     }
-    
+
     return GPU_CompileShader_RW(shader_type, rwops, 1);
 }
 
@@ -2610,6 +2610,6 @@ int gpu_strcasecmp(const char* s1, const char* s2)
 
 
 #ifdef _MSC_VER
-    #pragma warning(pop) 
+    #pragma warning(pop)
 #endif
 

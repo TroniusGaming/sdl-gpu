@@ -53,11 +53,11 @@ int main(int argc, char* argv[])
         }
         
         GPU_LogError("Saving image2\n");
-        SDL_RWops* rwops = SDL_RWFromFile(SAVE_FILE2, "wb");
+        SDL_IOStream* rwops = SDL_IOFromFile(SAVE_FILE2, "wb");
         GPU_SaveImage_RW(image, rwops, 1, GPU_FILE_PNG);
         
         GPU_LogError("Reloading image2\n");
-        rwops = SDL_RWFromFile(SAVE_FILE2, "rb");
+        rwops = SDL_IOFromFile(SAVE_FILE2, "rb");
         image2 = GPU_LoadImage_RW(rwops, 1);
         if(image2 == NULL)
         {

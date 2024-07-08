@@ -12,7 +12,7 @@ void log_surface_details(SDL_Surface* surface)
         GPU_Log("Surface: NULL\n");
         return;
     }
-    GPU_Log("Surface: %dx%d, %d bpp, %x Rmask, %x Gmask, %x Bmask, %x Amask\n", surface->w, surface->h, surface->format->BitsPerPixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
+    GPU_Log("Surface: %dx%d, %d bpp, %x Rmask, %x Gmask, %x Bmask, %x Amask\n", surface->w, surface->h, surface->format->bits_per_pixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
 }
 
 void log_image_details(GPU_Image* image)
