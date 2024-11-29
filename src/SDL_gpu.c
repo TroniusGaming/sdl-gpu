@@ -2341,6 +2341,22 @@ int GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name)
     return _gpu_current_renderer->impl->GetUniformLocation(_gpu_current_renderer, program_object, uniform_name);
 }
 
+int GPU_GetUniformBlockIndex(Uint32 program_object, const char* uniform_block_name)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return 0;
+
+	return _gpu_current_renderer->impl->GetUniformBlockIndex(_gpu_current_renderer, program_object, uniform_block_name);
+}
+
+void GPU_BindShaderUniformBlock(Uint32 program_object, int block_index, int binding_point)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return;
+
+	return _gpu_current_renderer->impl->BindShaderUniformBlock(_gpu_current_renderer, program_object, block_index, binding_point);
+}
+
 GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
@@ -2535,6 +2551,29 @@ void GPU_SetAttributeSource(int num_values, GPU_Attribute source)
     _gpu_current_renderer->impl->SetAttributeSource(_gpu_current_renderer, num_values, source);
 }
 
+Uint32 GPU_CreateUniformBuffer(int size)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return 0;
+
+	return _gpu_current_renderer->impl->CreateUniformBuffer(_gpu_current_renderer, size);
+}
+
+void GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int size)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return;
+
+	return _gpu_current_renderer->impl->BindUniformBuffer(_gpu_current_renderer, buffer, binding_point, offset, size);
+}
+
+void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const char* data)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return;
+
+	return _gpu_current_renderer->impl->SetUniformBufferData(_gpu_current_renderer, buffer, offset, size, data);
+}
 
 
 

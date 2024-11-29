@@ -2006,6 +2006,12 @@ DECLSPEC GPU_Attribute SDLCALL GPU_MakeAttribute(int location, void* values, GPU
 /*! Returns an integer representing the location of the specified uniform shader variable. */
 DECLSPEC int SDLCALL GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
 
+/*! Returns an integer representing the index of the specified uniform block in the shader. */
+DECLSPEC int SDLCALL GPU_GetUniformBlockIndex(Uint32 program_object, const char* uniform_block_name);
+
+/*! Binds a given uniform block of a shader program to the specified binding point. */
+DECLSPEC void SDLCALL GPU_BindShaderUniformBlock(Uint32 program_object, int block_index, int binding_point);
+
 /*! Loads the given shader program's built-in attribute and uniform locations. */
 DECLSPEC GPU_ShaderBlock SDLCALL GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
 
@@ -2077,6 +2083,15 @@ DECLSPEC void SDLCALL GPU_SetAttributeuiv(int location, int num_elements, unsign
 
 /*! Enables a shader attribute and sets its source data. */
 DECLSPEC void SDLCALL GPU_SetAttributeSource(int num_values, GPU_Attribute source);
+
+/*! Creates a uniform buffer object to be used in shaders. */
+DECLSPEC Uint32 SDLCALL GPU_CreateUniformBuffer(int size);
+
+/*! Binds a uniform buffer object to the specified binding point. */
+DECLSPEC void SDLCALL GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int size);
+
+/*! Sets the data for a uniform buffer object. */
+DECLSPEC void SDLCALL GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const char* data);
 
 // End of ShaderInterface
 /*! @} */

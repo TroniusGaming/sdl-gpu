@@ -6258,6 +6258,40 @@ static int GetUniformLocation(GPU_Renderer* renderer, Uint32 program_object, con
 #endif
 }
 
+static int GetUniformBlockIndex(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_block_name)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	if (!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+		return -1;
+	program_object = get_proper_program_id(renderer, program_object);
+	if (program_object == 0)
+		return -1;
+	return glGetUniformBlockIndex(program_object, uniform_block_name);
+#else
+	(void)renderer;
+	(void)program_object;
+	(void)uniform_block_name;
+	return -1;
+#endif
+}
+
+static void BindShaderUniformBlock(GPU_Renderer* renderer, Uint32 program_object, int block_index, int binding_point)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	if (!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+		return;
+	program_object = get_proper_program_id(renderer, program_object);
+	if (program_object == 0)
+		return;
+	glUniformBlockBinding(program_object, block_index, binding_point);
+#else
+	(void)renderer;
+	(void)program_object;
+	(void)block_index;
+	(void)binding_point;
+#endif
+}
+
 static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name,
                                        const char* modelViewMatrix_name)
 {
@@ -6825,6 +6859,49 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
 	(void)source;
 }
 
+static Uint32 CreateUniformBuffer(GPU_Renderer* renderer, int size)
+{
+	(void)renderer;
+
+	Uint32 ubo = 0;
+#ifndef SDL_GPU_DISABLE_SHADERS
+	glGenBuffers(1, &ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+#else
+	(void)size;
+#endif
+	return ubo;
+}
+
+static void BindUniformBuffer(GPU_Renderer* renderer, Uint32 buffer, int binding_point, int offset, int size)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	glBindBufferRange(GL_UNIFORM_BUFFER, binding_point, buffer, offset, size);
+#endif
+
+	(void)renderer;
+	(void)buffer;
+	(void)binding_point;
+	(void)offset;
+	(void)size;
+}
+
+static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, const char* data)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	glBindBuffer(GL_UNIFORM_BUFFER, buffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+#endif
+
+	(void)renderer;
+	(void)buffer;
+	(void)offset;
+	(void)size;
+	(void)data;
+}
 
 
 #define SET_COMMON_FUNCTIONS(impl)                            \
@@ -6895,6 +6972,8 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
 	impl->GetShaderMessage = &GetShaderMessage;               \
 	impl->GetAttributeLocation = &GetAttributeLocation;       \
 	impl->GetUniformLocation = &GetUniformLocation;           \
+	impl->GetUniformBlockIndex = &GetUniformBlockIndex;       \
+	impl->BindShaderUniformBlock = &BindShaderUniformBlock;   \
 	impl->LoadShaderBlock = &LoadShaderBlock;                 \
 	impl->SetShaderImage = &SetShaderImage;                   \
 	impl->GetUniformiv = &GetUniformiv;                       \
@@ -6914,6 +6993,9 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
 	impl->SetAttributeiv = &SetAttributeiv;                   \
 	impl->SetAttributeuiv = &SetAttributeuiv;                 \
 	impl->SetAttributeSource = &SetAttributeSource;           \
+	impl->CreateUniformBuffer = &CreateUniformBuffer;         \
+	impl->BindUniformBuffer = &BindUniformBuffer;             \
+	impl->SetUniformBufferData = &SetUniformBufferData;       \
                                                               \
 	/* Shape rendering */                                     \
                                                               \

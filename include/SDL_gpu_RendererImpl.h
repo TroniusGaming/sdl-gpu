@@ -191,7 +191,13 @@ typedef struct GPU_RendererImpl
 
     /*! \see GPU_GetUniformLocation() */
 	int (SDLCALL *GetUniformLocation)(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_name);
-    
+
+	/*! \see GPU_GetUniformBlockIndex() */
+	int (SDLCALL *GetUniformBlockIndex)(GPU_Renderer* renderer, Uint32 program_object, const char* uniform_block_name);
+
+	/*! \see GPU_BindShaderUniformBlock() */
+	void (SDLCALL *BindShaderUniformBlock)(GPU_Renderer* renderer, Uint32 program_object, int block_index, int binding_point);
+
     /*! \see GPU_LoadShaderBlock() */
 	GPU_ShaderBlock (SDLCALL *LoadShaderBlock)(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
     
@@ -251,7 +257,16 @@ typedef struct GPU_RendererImpl
     
     /*! \see GPU_SetAttributeSource() */
 	void (SDLCALL *SetAttributeSource)(GPU_Renderer* renderer, int num_values, GPU_Attribute source);
-    
+
+    /*! \see GPU_CreateUniformBuffer() */
+	Uint32 (SDLCALL *CreateUniformBuffer)(GPU_Renderer* renderer, int size);
+
+	/*! \see GPU_BindUniformBuffer() */
+	void (SDLCALL *BindUniformBuffer)(GPU_Renderer* renderer, Uint32 buffer, int binding_point, int offset, int size);
+
+	/*! \see GPU_SetUniformBufferData() */
+	void (SDLCALL *SetUniformBufferData)(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, const char* data);
+
     
     // Shapes
     
