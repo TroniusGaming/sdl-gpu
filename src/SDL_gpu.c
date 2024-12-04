@@ -2354,7 +2354,7 @@ void GPU_BindShaderUniformBlock(Uint32 program_object, int block_index, int bind
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
 
-	return _gpu_current_renderer->impl->BindShaderUniformBlock(_gpu_current_renderer, program_object, block_index, binding_point);
+	_gpu_current_renderer->impl->BindShaderUniformBlock(_gpu_current_renderer, program_object, block_index, binding_point);
 }
 
 GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
@@ -2564,7 +2564,7 @@ void GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int siz
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
 
-	return _gpu_current_renderer->impl->BindUniformBuffer(_gpu_current_renderer, buffer, binding_point, offset, size);
+	_gpu_current_renderer->impl->BindUniformBuffer(_gpu_current_renderer, buffer, binding_point, offset, size);
 }
 
 void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const char* data)
@@ -2572,7 +2572,7 @@ void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const char* d
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
 
-	return _gpu_current_renderer->impl->SetUniformBufferData(_gpu_current_renderer, buffer, offset, size, data);
+	_gpu_current_renderer->impl->SetUniformBufferData(_gpu_current_renderer, buffer, offset, size, data);
 }
 
 
