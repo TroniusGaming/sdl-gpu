@@ -2003,7 +2003,7 @@ DECLSPEC GPU_AttributeFormat SDLCALL GPU_MakeAttributeFormat(int num_elems_per_v
 /*! Returns a filled GPU_Attribute object. */
 DECLSPEC GPU_Attribute SDLCALL GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
 
-/*! Returns an integer representing the location of the specified uniform shader variable. */
+/*! Returns an integer representing the location of the specified uniform shader variable or block. */
 DECLSPEC int SDLCALL GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
 
 /*! Returns an integer representing the index of the specified uniform block in the shader. */
@@ -2011,6 +2011,12 @@ DECLSPEC int SDLCALL GPU_GetUniformBlockIndex(Uint32 program_object, const char*
 
 /*! Binds a given uniform block of a shader program to the specified binding point. */
 DECLSPEC void SDLCALL GPU_BindShaderUniformBlock(Uint32 program_object, int block_index, int binding_point);
+
+/*! Returns an integer representing the index of the specified shader storage buffer in the shader. */
+DECLSPEC int SDLCALL GPU_GetShaderStorageBufferIndex(Uint32 program_object, const char* storage_buffer_name);
+
+/*! Binds a given shader storage buffer of a shader program to the specified binding point. */
+DECLSPEC void SDLCALL GPU_BindShaderStorageBuffer(Uint32 program_object, int buffer_index, int binding_point);
 
 /*! Loads the given shader program's built-in attribute and uniform locations. */
 DECLSPEC GPU_ShaderBlock SDLCALL GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
@@ -2091,7 +2097,13 @@ DECLSPEC Uint32 SDLCALL GPU_CreateUniformBuffer(int size);
 DECLSPEC void SDLCALL GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int size);
 
 /*! Sets the data for a uniform buffer object. */
-DECLSPEC void SDLCALL GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const char* data);
+DECLSPEC void SDLCALL GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, void* data);
+
+/*! Creates a shader storage buffer object to be used in shaders. */
+DECLSPEC Uint32 SDLCALL GPU_CreateShaderStorageBuffer();
+
+/*! Sets the data for a shader storage buffer object. */
+DECLSPEC void SDLCALL GPU_SetShaderStorageBufferData(Uint32 buffer, int size, void* data);
 
 // End of ShaderInterface
 /*! @} */

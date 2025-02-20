@@ -6292,6 +6292,40 @@ static void BindShaderUniformBlock(GPU_Renderer* renderer, Uint32 program_object
 #endif
 }
 
+static int GetShaderStorageBufferIndex(GPU_Renderer* renderer, Uint32 program_object, const char* buffer_name)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	if (!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+		return -1;
+	program_object = get_proper_program_id(renderer, program_object);
+	if (program_object == 0)
+		return -1;
+	return glGetProgramResourceIndex(program_object, GL_SHADER_STORAGE_BLOCK, buffer_name);
+#else
+	(void)renderer;
+	(void)program_object;
+	(void)buffer_name;
+	return -1;
+#endif
+}
+
+static void BindShaderStorageBuffer(GPU_Renderer* renderer, Uint32 program_object, int buffer_index, int binding_point)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	if (!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
+		return;
+	program_object = get_proper_program_id(renderer, program_object);
+	if (program_object == 0)
+		return;
+	glShaderStorageBlockBinding(program_object, buffer_index, binding_point);
+#else
+	(void)renderer;
+	(void)program_object;
+	(void)buffer_index;
+	(void)binding_point;
+#endif
+}
+
 static GPU_ShaderBlock LoadShaderBlock(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name,
                                        const char* modelViewMatrix_name)
 {
@@ -6888,7 +6922,7 @@ static void BindUniformBuffer(GPU_Renderer* renderer, Uint32 buffer, int binding
 	(void)size;
 }
 
-static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, const char* data)
+static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, void* data)
 {
 #ifndef SDL_GPU_DISABLE_SHADERS
 	glBindBuffer(GL_UNIFORM_BUFFER, buffer);
@@ -6903,120 +6937,149 @@ static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offs
 	(void)data;
 }
 
+static Uint32 CreateShaderStorageBuffer(GPU_Renderer* renderer)
+{
+	(void)renderer;
 
-#define SET_COMMON_FUNCTIONS(impl)                            \
-	impl->Init = &Init;                                       \
-	impl->CreateTargetFromWindow = &CreateTargetFromWindow;   \
-	impl->SetActiveTarget = &SetActiveTarget;                 \
-	impl->CreateAliasTarget = &CreateAliasTarget;             \
-	impl->MakeCurrent = &MakeCurrent;                         \
-	impl->SetAsCurrent = &SetAsCurrent;                       \
-	impl->ResetRendererState = &ResetRendererState;           \
-	impl->AddDepthBuffer = &AddDepthBuffer;                   \
-	impl->SetWindowResolution = &SetWindowResolution;         \
-	impl->SetVirtualResolution = &SetVirtualResolution;       \
-	impl->UnsetVirtualResolution = &UnsetVirtualResolution;   \
-	impl->Quit = &Quit;                                       \
-                                                              \
-	impl->SetFullscreen = &SetFullscreen;                     \
-	impl->SetCamera = &SetCamera;                             \
-                                                              \
-	impl->CreateImage = &CreateImage;                         \
-	impl->CreateImageUsingTexture = &CreateImageUsingTexture; \
-	impl->CreateAliasImage = &CreateAliasImage;               \
-	impl->SaveImage = &SaveImage;                             \
-	impl->CopyImage = &CopyImage;                             \
-	impl->UpdateImage = &UpdateImage;                         \
-	impl->UpdateImageBytes = &UpdateImageBytes;               \
-	impl->ReplaceImage = &ReplaceImage;                       \
-	impl->CopyImageFromSurface = &CopyImageFromSurface;       \
-	impl->CopyImageFromTarget = &CopyImageFromTarget;         \
-	impl->CopySurfaceFromTarget = &CopySurfaceFromTarget;     \
-	impl->CopySurfaceFromImage = &CopySurfaceFromImage;       \
-	impl->FreeImage = &FreeImage;                             \
-                                                              \
-	impl->GetTarget = &GetTarget;                             \
-	impl->FreeTarget = &FreeTarget;                           \
-                                                              \
-	impl->Blit = &Blit;                                       \
-	impl->BlitRotate = &BlitRotate;                           \
-	impl->BlitScale = &BlitScale;                             \
-	impl->BlitTransform = &BlitTransform;                     \
-	impl->BlitTransformX = &BlitTransformX;                   \
-	impl->PrimitiveBatchV = &PrimitiveBatchV;                 \
-                                                              \
-	impl->GenerateMipmaps = &GenerateMipmaps;                 \
-                                                              \
-	impl->SetClip = &SetClip;                                 \
-	impl->UnsetClip = &UnsetClip;                             \
-                                                              \
-	impl->GetPixel = &GetPixel;                               \
-	impl->SetImageFilter = &SetImageFilter;                   \
-	impl->SetWrapMode = &SetWrapMode;                         \
-	impl->GetTextureHandle = &GetTextureHandle;               \
-                                                              \
-	impl->ClearRGBA = &ClearRGBA;                             \
-	impl->FlushBlitBuffer = &FlushBlitBuffer;                 \
-	impl->Flip = &Flip;                                       \
-                                                              \
-	impl->CompileShader_RW = &CompileShader_RW;               \
-	impl->CompileShader = &CompileShader;                     \
-	impl->CreateShaderProgram = &CreateShaderProgram;         \
-	impl->LinkShaderProgram = &LinkShaderProgram;             \
-	impl->FreeShader = &FreeShader;                           \
-	impl->FreeShaderProgram = &FreeShaderProgram;             \
-	impl->AttachShader = &AttachShader;                       \
-	impl->DetachShader = &DetachShader;                       \
-	impl->ActivateShaderProgram = &ActivateShaderProgram;     \
-	impl->DeactivateShaderProgram = &DeactivateShaderProgram; \
-	impl->GetShaderMessage = &GetShaderMessage;               \
-	impl->GetAttributeLocation = &GetAttributeLocation;       \
-	impl->GetUniformLocation = &GetUniformLocation;           \
-	impl->GetUniformBlockIndex = &GetUniformBlockIndex;       \
-	impl->BindShaderUniformBlock = &BindShaderUniformBlock;   \
-	impl->LoadShaderBlock = &LoadShaderBlock;                 \
-	impl->SetShaderImage = &SetShaderImage;                   \
-	impl->GetUniformiv = &GetUniformiv;                       \
-	impl->SetUniformi = &SetUniformi;                         \
-	impl->SetUniformiv = &SetUniformiv;                       \
-	impl->GetUniformuiv = &GetUniformuiv;                     \
-	impl->SetUniformui = &SetUniformui;                       \
-	impl->SetUniformuiv = &SetUniformuiv;                     \
-	impl->GetUniformfv = &GetUniformfv;                       \
-	impl->SetUniformf = &SetUniformf;                         \
-	impl->SetUniformfv = &SetUniformfv;                       \
-	impl->SetUniformMatrixfv = &SetUniformMatrixfv;           \
-	impl->SetAttributef = &SetAttributef;                     \
-	impl->SetAttributei = &SetAttributei;                     \
-	impl->SetAttributeui = &SetAttributeui;                   \
-	impl->SetAttributefv = &SetAttributefv;                   \
-	impl->SetAttributeiv = &SetAttributeiv;                   \
-	impl->SetAttributeuiv = &SetAttributeuiv;                 \
-	impl->SetAttributeSource = &SetAttributeSource;           \
-	impl->CreateUniformBuffer = &CreateUniformBuffer;         \
-	impl->BindUniformBuffer = &BindUniformBuffer;             \
-	impl->SetUniformBufferData = &SetUniformBufferData;       \
-                                                              \
-	/* Shape rendering */                                     \
-                                                              \
-	impl->SetLineThickness = &SetLineThickness;               \
-	impl->GetLineThickness = &GetLineThickness;               \
-	impl->Pixel = &Pixel;                                     \
-	impl->Line = &Line;                                       \
-	impl->Arc = &Arc;                                         \
-	impl->ArcFilled = &ArcFilled;                             \
-	impl->Circle = &Circle;                                   \
-	impl->CircleFilled = &CircleFilled;                       \
-	impl->Ellipse = &Ellipse;                                 \
-	impl->EllipseFilled = &EllipseFilled;                     \
-	impl->Sector = &Sector;                                   \
-	impl->SectorFilled = &SectorFilled;                       \
-	impl->Tri = &Tri;                                         \
-	impl->TriFilled = &TriFilled;                             \
-	impl->Rectangle = &Rectangle;                             \
-	impl->RectangleFilled = &RectangleFilled;                 \
-	impl->RectangleRound = &RectangleRound;                   \
-	impl->RectangleRoundFilled = &RectangleRoundFilled;       \
-	impl->Polygon = &Polygon;                                 \
-	impl->Polyline = &Polyline;                               \
+	Uint32 ssbo = 0;
+#ifndef SDL_GPU_DISABLE_SHADERS
+	glGenBuffers(1, &ssbo);
+#endif
+	return ssbo;
+}
+
+static void SetShaderStorageBufferData(GPU_Renderer* renderer, Uint32 buffer, int size, void* data)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+#endif
+
+	(void)renderer;
+	(void)buffer;
+	(void)size;
+	(void)data;
+}
+
+
+#define SET_COMMON_FUNCTIONS(impl)                                    \
+	impl->Init = &Init;                                               \
+	impl->CreateTargetFromWindow = &CreateTargetFromWindow;           \
+	impl->SetActiveTarget = &SetActiveTarget;                         \
+	impl->CreateAliasTarget = &CreateAliasTarget;                     \
+	impl->MakeCurrent = &MakeCurrent;                                 \
+	impl->SetAsCurrent = &SetAsCurrent;                               \
+	impl->ResetRendererState = &ResetRendererState;                   \
+	impl->AddDepthBuffer = &AddDepthBuffer;                           \
+	impl->SetWindowResolution = &SetWindowResolution;                 \
+	impl->SetVirtualResolution = &SetVirtualResolution;               \
+	impl->UnsetVirtualResolution = &UnsetVirtualResolution;           \
+	impl->Quit = &Quit;                                               \
+                                                                      \
+	impl->SetFullscreen = &SetFullscreen;                             \
+	impl->SetCamera = &SetCamera;                                     \
+                                                                      \
+	impl->CreateImage = &CreateImage;                                 \
+	impl->CreateImageUsingTexture = &CreateImageUsingTexture;         \
+	impl->CreateAliasImage = &CreateAliasImage;                       \
+	impl->SaveImage = &SaveImage;                                     \
+	impl->CopyImage = &CopyImage;                                     \
+	impl->UpdateImage = &UpdateImage;                                 \
+	impl->UpdateImageBytes = &UpdateImageBytes;                       \
+	impl->ReplaceImage = &ReplaceImage;                               \
+	impl->CopyImageFromSurface = &CopyImageFromSurface;               \
+	impl->CopyImageFromTarget = &CopyImageFromTarget;                 \
+	impl->CopySurfaceFromTarget = &CopySurfaceFromTarget;             \
+	impl->CopySurfaceFromImage = &CopySurfaceFromImage;               \
+	impl->FreeImage = &FreeImage;                                     \
+                                                                      \
+	impl->GetTarget = &GetTarget;                                     \
+	impl->FreeTarget = &FreeTarget;                                   \
+                                                                      \
+	impl->Blit = &Blit;                                               \
+	impl->BlitRotate = &BlitRotate;                                   \
+	impl->BlitScale = &BlitScale;                                     \
+	impl->BlitTransform = &BlitTransform;                             \
+	impl->BlitTransformX = &BlitTransformX;                           \
+	impl->PrimitiveBatchV = &PrimitiveBatchV;                         \
+                                                                      \
+	impl->GenerateMipmaps = &GenerateMipmaps;                         \
+                                                                      \
+	impl->SetClip = &SetClip;                                         \
+	impl->UnsetClip = &UnsetClip;                                     \
+                                                                      \
+	impl->GetPixel = &GetPixel;                                       \
+	impl->SetImageFilter = &SetImageFilter;                           \
+	impl->SetWrapMode = &SetWrapMode;                                 \
+	impl->GetTextureHandle = &GetTextureHandle;                       \
+                                                                      \
+	impl->ClearRGBA = &ClearRGBA;                                     \
+	impl->FlushBlitBuffer = &FlushBlitBuffer;                         \
+	impl->Flip = &Flip;                                               \
+                                                                      \
+	impl->CompileShader_RW = &CompileShader_RW;                       \
+	impl->CompileShader = &CompileShader;                             \
+	impl->CreateShaderProgram = &CreateShaderProgram;                 \
+	impl->LinkShaderProgram = &LinkShaderProgram;                     \
+	impl->FreeShader = &FreeShader;                                   \
+	impl->FreeShaderProgram = &FreeShaderProgram;                     \
+	impl->AttachShader = &AttachShader;                               \
+	impl->DetachShader = &DetachShader;                               \
+	impl->ActivateShaderProgram = &ActivateShaderProgram;             \
+	impl->DeactivateShaderProgram = &DeactivateShaderProgram;         \
+	impl->GetShaderMessage = &GetShaderMessage;                       \
+	impl->GetAttributeLocation = &GetAttributeLocation;               \
+	impl->GetUniformLocation = &GetUniformLocation;                   \
+	impl->GetUniformBlockIndex = &GetUniformBlockIndex;               \
+	impl->BindShaderUniformBlock = &BindShaderUniformBlock;           \
+	impl->GetShaderStorageBufferIndex = &GetShaderStorageBufferIndex; \
+	impl->BindShaderStorageBuffer = &BindShaderStorageBuffer;         \
+	impl->LoadShaderBlock = &LoadShaderBlock;                         \
+	impl->SetShaderImage = &SetShaderImage;                           \
+	impl->GetUniformiv = &GetUniformiv;                               \
+	impl->SetUniformi = &SetUniformi;                                 \
+	impl->SetUniformiv = &SetUniformiv;                               \
+	impl->GetUniformuiv = &GetUniformuiv;                             \
+	impl->SetUniformui = &SetUniformui;                               \
+	impl->SetUniformuiv = &SetUniformuiv;                             \
+	impl->GetUniformfv = &GetUniformfv;                               \
+	impl->SetUniformf = &SetUniformf;                                 \
+	impl->SetUniformfv = &SetUniformfv;                               \
+	impl->SetUniformMatrixfv = &SetUniformMatrixfv;                   \
+	impl->SetAttributef = &SetAttributef;                             \
+	impl->SetAttributei = &SetAttributei;                             \
+	impl->SetAttributeui = &SetAttributeui;                           \
+	impl->SetAttributefv = &SetAttributefv;                           \
+	impl->SetAttributeiv = &SetAttributeiv;                           \
+	impl->SetAttributeuiv = &SetAttributeuiv;                         \
+	impl->SetAttributeSource = &SetAttributeSource;                   \
+	impl->CreateUniformBuffer = &CreateUniformBuffer;                 \
+	impl->BindUniformBuffer = &BindUniformBuffer;                     \
+	impl->SetUniformBufferData = &SetUniformBufferData;               \
+	impl->CreateShaderStorageBuffer = &CreateShaderStorageBuffer;     \
+	impl->SetShaderStorageBufferData = &SetShaderStorageBufferData;   \
+                                                                      \
+	/* Shape rendering */                                             \
+                                                                      \
+	impl->SetLineThickness = &SetLineThickness;                       \
+	impl->GetLineThickness = &GetLineThickness;                       \
+	impl->Pixel = &Pixel;                                             \
+	impl->Line = &Line;                                               \
+	impl->Arc = &Arc;                                                 \
+	impl->ArcFilled = &ArcFilled;                                     \
+	impl->Circle = &Circle;                                           \
+	impl->CircleFilled = &CircleFilled;                               \
+	impl->Ellipse = &Ellipse;                                         \
+	impl->EllipseFilled = &EllipseFilled;                             \
+	impl->Sector = &Sector;                                           \
+	impl->SectorFilled = &SectorFilled;                               \
+	impl->Tri = &Tri;                                                 \
+	impl->TriFilled = &TriFilled;                                     \
+	impl->Rectangle = &Rectangle;                                     \
+	impl->RectangleFilled = &RectangleFilled;                         \
+	impl->RectangleRound = &RectangleRound;                           \
+	impl->RectangleRoundFilled = &RectangleRoundFilled;               \
+	impl->Polygon = &Polygon;                                         \
+	impl->Polyline = &Polyline;                                       \
 	impl->PolygonFilled = &PolygonFilled;

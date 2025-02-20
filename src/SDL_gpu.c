@@ -2357,6 +2357,22 @@ void GPU_BindShaderUniformBlock(Uint32 program_object, int block_index, int bind
 	_gpu_current_renderer->impl->BindShaderUniformBlock(_gpu_current_renderer, program_object, block_index, binding_point);
 }
 
+int GPU_GetShaderStorageBufferIndex(Uint32 program_object, const char* storage_buffer_name)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return 0;
+
+	return _gpu_current_renderer->impl->GetShaderStorageBufferIndex(_gpu_current_renderer, program_object, storage_buffer_name);
+}
+
+void GPU_BindShaderStorageBuffer(Uint32 program_object, int buffer_index, int binding_point)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return;
+
+	_gpu_current_renderer->impl->BindShaderStorageBuffer(_gpu_current_renderer, program_object, buffer_index, binding_point);
+}
+
 GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
 {
     if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
@@ -2567,12 +2583,28 @@ void GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int siz
 	_gpu_current_renderer->impl->BindUniformBuffer(_gpu_current_renderer, buffer, binding_point, offset, size);
 }
 
-void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const char* data)
+void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, void* data)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
 
 	_gpu_current_renderer->impl->SetUniformBufferData(_gpu_current_renderer, buffer, offset, size, data);
+}
+
+Uint32 GPU_CreateShaderStorageBuffer()
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return 0;
+
+	return _gpu_current_renderer->impl->CreateShaderStorageBuffer(_gpu_current_renderer);
+}
+
+void GPU_SetShaderStorageBufferData(Uint32 buffer, int size, void* data)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return;
+
+	_gpu_current_renderer->impl->SetShaderStorageBufferData(_gpu_current_renderer, buffer, size, data);
 }
 
 
