@@ -2365,12 +2365,12 @@ int GPU_GetShaderStorageBufferIndex(Uint32 program_object, const char* storage_b
 	return _gpu_current_renderer->impl->GetShaderStorageBufferIndex(_gpu_current_renderer, program_object, storage_buffer_name);
 }
 
-void GPU_BindShaderStorageBuffer(Uint32 program_object, int buffer_index, int binding_point)
+void GPU_BindShaderStorageBuffer(Uint32 program_object, Uint32 ssbo, int buffer_index, int binding_point)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
 
-	_gpu_current_renderer->impl->BindShaderStorageBuffer(_gpu_current_renderer, program_object, buffer_index, binding_point);
+	_gpu_current_renderer->impl->BindShaderStorageBuffer(_gpu_current_renderer, program_object, ssbo, buffer_index, binding_point);
 }
 
 GPU_ShaderBlock GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name)
@@ -2567,12 +2567,12 @@ void GPU_SetAttributeSource(int num_values, GPU_Attribute source)
     _gpu_current_renderer->impl->SetAttributeSource(_gpu_current_renderer, num_values, source);
 }
 
-Uint32 GPU_CreateUniformBuffer(int size)
+Uint32 GPU_CreateUniformBuffer(int size, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return 0;
 
-	return _gpu_current_renderer->impl->CreateUniformBuffer(_gpu_current_renderer, size);
+	return _gpu_current_renderer->impl->CreateUniformBuffer(_gpu_current_renderer, size, access_frequency, usage_type);
 }
 
 void GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int size)
@@ -2583,7 +2583,7 @@ void GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int siz
 	_gpu_current_renderer->impl->BindUniformBuffer(_gpu_current_renderer, buffer, binding_point, offset, size);
 }
 
-void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, void* data)
+void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const void* data)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
@@ -2591,7 +2591,7 @@ void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, void* data)
 	_gpu_current_renderer->impl->SetUniformBufferData(_gpu_current_renderer, buffer, offset, size, data);
 }
 
-Uint32 GPU_CreateShaderStorageBuffer()
+Uint32 GPU_CreateShaderStorageBuffer(void)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return 0;
@@ -2599,12 +2599,12 @@ Uint32 GPU_CreateShaderStorageBuffer()
 	return _gpu_current_renderer->impl->CreateShaderStorageBuffer(_gpu_current_renderer);
 }
 
-void GPU_SetShaderStorageBufferData(Uint32 buffer, int size, void* data)
+void GPU_SetShaderStorageBufferData(Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
 		return;
 
-	_gpu_current_renderer->impl->SetShaderStorageBufferData(_gpu_current_renderer, buffer, size, data);
+	_gpu_current_renderer->impl->SetShaderStorageBufferData(_gpu_current_renderer, buffer, size, data, access_frequency, usage_type);
 }
 
 

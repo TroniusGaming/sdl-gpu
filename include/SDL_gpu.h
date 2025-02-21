@@ -704,6 +704,24 @@ typedef enum {
     GPU_LANGUAGE_CG = 5
 } GPU_ShaderLanguageEnum;
 
+/*! \ingroup ShaderInterface
+* Type enumeration for the frequency of access to a shader buffer.
+*/
+typedef enum {
+	GPU_BUFFER_ACCESS_FREQUENCY_STREAM = 0, // The data store contents will be modified once and used at most a few times.
+	GPU_BUFFER_ACCESS_FREQUENCY_STATIC = 1, // The data store contents will be modified once and used many times.
+	GPU_BUFFER_ACCESS_FREQUENCY_DRAW = 2 // The data store contents will be modified repeatedly and used many times.
+} GPU_ShaderBufferAccessFrequency;
+
+/*! \ingroup ShaderInterface
+* Type enumeration for how a shader buffer is going to be used.
+*/
+typedef enum {
+	GPU_BUFFER_USAGE_DRAW = 0, // The data store contents are modified by the application, and used as the source for GL drawing and image specification commands.
+	GPU_BUFFER_USAGE_READ = 1, // The data store contents are modified by reading data from the shader, and used to return that data when queried by the application.
+	GPU_BUFFER_USAGE_COPY = 2 // The data store contents are modified by reading data from the shader, and used as the source for shader drawing and image specification commands.
+} GPU_ShaderBufferUsageType;
+
 /*! \ingroup ShaderInterface */
 typedef struct GPU_AttributeFormat
 {
@@ -2003,7 +2021,7 @@ DECLSPEC GPU_AttributeFormat SDLCALL GPU_MakeAttributeFormat(int num_elems_per_v
 /*! Returns a filled GPU_Attribute object. */
 DECLSPEC GPU_Attribute SDLCALL GPU_MakeAttribute(int location, void* values, GPU_AttributeFormat format);
 
-/*! Returns an integer representing the location of the specified uniform shader variable or block. */
+/*! Returns an integer representing the location of the specified uniform shader variable. */
 DECLSPEC int SDLCALL GPU_GetUniformLocation(Uint32 program_object, const char* uniform_name);
 
 /*! Returns an integer representing the index of the specified uniform block in the shader. */
@@ -2016,7 +2034,7 @@ DECLSPEC void SDLCALL GPU_BindShaderUniformBlock(Uint32 program_object, int bloc
 DECLSPEC int SDLCALL GPU_GetShaderStorageBufferIndex(Uint32 program_object, const char* storage_buffer_name);
 
 /*! Binds a given shader storage buffer of a shader program to the specified binding point. */
-DECLSPEC void SDLCALL GPU_BindShaderStorageBuffer(Uint32 program_object, int buffer_index, int binding_point);
+DECLSPEC void SDLCALL GPU_BindShaderStorageBuffer(Uint32 program_object, Uint32 ssbo, int buffer_index, int binding_point);
 
 /*! Loads the given shader program's built-in attribute and uniform locations. */
 DECLSPEC GPU_ShaderBlock SDLCALL GPU_LoadShaderBlock(Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
@@ -2091,19 +2109,19 @@ DECLSPEC void SDLCALL GPU_SetAttributeuiv(int location, int num_elements, unsign
 DECLSPEC void SDLCALL GPU_SetAttributeSource(int num_values, GPU_Attribute source);
 
 /*! Creates a uniform buffer object to be used in shaders. */
-DECLSPEC Uint32 SDLCALL GPU_CreateUniformBuffer(int size);
+DECLSPEC Uint32 SDLCALL GPU_CreateUniformBuffer(int size, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type);
 
 /*! Binds a uniform buffer object to the specified binding point. */
 DECLSPEC void SDLCALL GPU_BindUniformBuffer(Uint32 buffer, int binding_point, int offset, int size);
 
 /*! Sets the data for a uniform buffer object. */
-DECLSPEC void SDLCALL GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, void* data);
+DECLSPEC void SDLCALL GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const void* data);
 
 /*! Creates a shader storage buffer object to be used in shaders. */
-DECLSPEC Uint32 SDLCALL GPU_CreateShaderStorageBuffer();
+DECLSPEC Uint32 SDLCALL GPU_CreateShaderStorageBuffer(void);
 
 /*! Sets the data for a shader storage buffer object. */
-DECLSPEC void SDLCALL GPU_SetShaderStorageBufferData(Uint32 buffer, int size, void* data);
+DECLSPEC void SDLCALL GPU_SetShaderStorageBufferData(Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type);
 
 // End of ShaderInterface
 /*! @} */

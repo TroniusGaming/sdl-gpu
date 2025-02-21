@@ -6309,7 +6309,7 @@ static int GetShaderStorageBufferIndex(GPU_Renderer* renderer, Uint32 program_ob
 #endif
 }
 
-static void BindShaderStorageBuffer(GPU_Renderer* renderer, Uint32 program_object, int buffer_index, int binding_point)
+static void BindShaderStorageBuffer(GPU_Renderer* renderer, Uint32 program_object, Uint32 ssbo, int buffer_index, int binding_point)
 {
 #ifndef SDL_GPU_DISABLE_SHADERS
 	if (!IsFeatureEnabled(renderer, GPU_FEATURE_BASIC_SHADERS))
@@ -6317,6 +6317,7 @@ static void BindShaderStorageBuffer(GPU_Renderer* renderer, Uint32 program_objec
 	program_object = get_proper_program_id(renderer, program_object);
 	if (program_object == 0)
 		return;
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding_point, ssbo);
 	glShaderStorageBlockBinding(program_object, buffer_index, binding_point);
 #else
 	(void)renderer;
@@ -6893,7 +6894,22 @@ static void SetAttributeSource(GPU_Renderer* renderer, int num_values, GPU_Attri
 	(void)source;
 }
 
-static Uint32 CreateUniformBuffer(GPU_Renderer* renderer, int size)
+#ifndef SDL_GPU_DISABLE_SHADERS
+static int GetBufferUsageType(GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
+{
+	int UsageType = 0;
+	switch (access_frequency)
+	{
+		case GPU_BUFFER_ACCESS_FREQUENCY_STREAM: UsageType = GL_STREAM_DRAW; break;
+		case GPU_BUFFER_ACCESS_FREQUENCY_STATIC: UsageType = GL_STATIC_DRAW; break;
+		case GPU_BUFFER_ACCESS_FREQUENCY_DRAW: UsageType = GL_DYNAMIC_DRAW; break;
+	}
+
+	return UsageType + usage_type;
+}
+#endif
+
+static Uint32 CreateUniformBuffer(GPU_Renderer* renderer, int size, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
 {
 	(void)renderer;
 
@@ -6901,7 +6917,7 @@ static Uint32 CreateUniformBuffer(GPU_Renderer* renderer, int size)
 #ifndef SDL_GPU_DISABLE_SHADERS
 	glGenBuffers(1, &ubo);
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-	glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, size, NULL, GetBufferUsageType(access_frequency, usage_type));
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 #else
 	(void)size;
@@ -6922,7 +6938,7 @@ static void BindUniformBuffer(GPU_Renderer* renderer, Uint32 buffer, int binding
 	(void)size;
 }
 
-static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, void* data)
+static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, const void* data)
 {
 #ifndef SDL_GPU_DISABLE_SHADERS
 	glBindBuffer(GL_UNIFORM_BUFFER, buffer);
@@ -6948,11 +6964,11 @@ static Uint32 CreateShaderStorageBuffer(GPU_Renderer* renderer)
 	return ssbo;
 }
 
-static void SetShaderStorageBufferData(GPU_Renderer* renderer, Uint32 buffer, int size, void* data)
+static void SetShaderStorageBufferData(GPU_Renderer* renderer, Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
 {
 #ifndef SDL_GPU_DISABLE_SHADERS
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GetBufferUsageType(access_frequency, usage_type));
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 #endif
 

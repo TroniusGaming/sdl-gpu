@@ -202,7 +202,7 @@ typedef struct GPU_RendererImpl
 	int (SDLCALL *GetShaderStorageBufferIndex)(GPU_Renderer* renderer, Uint32 program_object, const char* storage_buffer_name);
 
 	/*! \see GPU_BindShaderStorageBuffer() */
-	void (SDLCALL *BindShaderStorageBuffer)(GPU_Renderer* renderer, Uint32 program_object, int storage_buffer_index, int binding_point);
+	void (SDLCALL *BindShaderStorageBuffer)(GPU_Renderer* renderer, Uint32 program_object, Uint32 ssbo, int storage_buffer_index, int binding_point);
 
     /*! \see GPU_LoadShaderBlock() */
 	GPU_ShaderBlock (SDLCALL *LoadShaderBlock)(GPU_Renderer* renderer, Uint32 program_object, const char* position_name, const char* texcoord_name, const char* color_name, const char* modelViewMatrix_name);
@@ -265,19 +265,19 @@ typedef struct GPU_RendererImpl
 	void (SDLCALL *SetAttributeSource)(GPU_Renderer* renderer, int num_values, GPU_Attribute source);
 
     /*! \see GPU_CreateUniformBuffer() */
-	Uint32 (SDLCALL *CreateUniformBuffer)(GPU_Renderer* renderer, int size);
+	Uint32 (SDLCALL *CreateUniformBuffer)(GPU_Renderer* renderer, int size, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type);
 
 	/*! \see GPU_BindUniformBuffer() */
 	void (SDLCALL *BindUniformBuffer)(GPU_Renderer* renderer, Uint32 buffer, int binding_point, int offset, int size);
 
 	/*! \see GPU_SetUniformBufferData() */
-	void (SDLCALL *SetUniformBufferData)(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, void* data);
+	void (SDLCALL *SetUniformBufferData)(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, const void* data);
 
 	/*! \see GPU_CreateShaderStorageBuffer() */
 	Uint32 (SDLCALL *CreateShaderStorageBuffer)(GPU_Renderer* renderer);
 
 	/*! \see GPU_SetShaderStorageBufferData() */
-	void (SDLCALL *SetShaderStorageBufferData)(GPU_Renderer* renderer, Uint32 buffer, int size, void* data);
+	void (SDLCALL *SetShaderStorageBufferData)(GPU_Renderer* renderer, Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type);
 
     
     // Shapes
