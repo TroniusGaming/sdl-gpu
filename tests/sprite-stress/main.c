@@ -63,9 +63,9 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+                    else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
                     {
                         if(numSprites < maxSprites)
                             numSprites += 100;
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
                         frameCount = 0;
                         startTime = SDL_GetTicks();
                     }
-                    else if(event.key.keysym.sym == SDLK_MINUS)
+                    else if(event.key.key == SDLK_MINUS)
                     {
                         if(numSprites > 1)
                             numSprites -= 100;

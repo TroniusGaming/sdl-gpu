@@ -3,7 +3,7 @@
 
 #include "SDL_gpu.h"
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 
 #define SDL_GetKeyState SDL_GetKeyboardState
 #define KEY_UP SDL_SCANCODE_UP
@@ -42,7 +42,7 @@
 #endif
 
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
     #define GET_ALPHA(sdl_color) (sdl_color.a)
 #else
     #define GET_ALPHA(sdl_color) (sdl_color.unused)

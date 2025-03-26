@@ -88,7 +88,7 @@ void main_loop(GPU_Target* _screen, NVGcontext* _vg, const Uint16 _screen_w, con
             if(event.type == SDL_QUIT)
                 loop = false;
             else if(event.type == SDL_KEYDOWN) {
-                if(event.key.keysym.sym == SDLK_ESCAPE)
+                if(event.key.key == SDLK_ESCAPE)
                     loop = false;
             }
         }

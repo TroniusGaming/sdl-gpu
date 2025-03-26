@@ -43,7 +43,7 @@ DemoFont* FONT_Alloc(SDL_Surface* source_surface)
 	int x, i;
 	Uint32 pixel;
 	Uint8 uses_alpha;
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 	SDL_BlendMode blendMode;
 #endif
 
@@ -88,7 +88,7 @@ DemoFont* FONT_Alloc(SDL_Surface* source_surface)
 
     // pixel = _GetPixel(source_surface, 0, source_surface->h - 1);
     
-    #ifdef SDL_GPU_USE_SDL2
+	#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
     SDL_GetSurfaceBlendMode(source_surface, &blendMode);
     uses_alpha = (blendMode != SDL_BLENDMODE_NONE);
     #else
@@ -101,6 +101,8 @@ DemoFont* FONT_Alloc(SDL_Surface* source_surface)
         SDL_UnlockSurface(source_surface);
         #ifdef SDL_GPU_USE_SDL2
         SDL_SetColorKey(source_surface, SDL_TRUE, pixel);
+		#elif defined(SDL_GPU_USE_SDL3)
+        SDL_SetSurfaceColorKey(source_surface, true, pixel);
         #else
         SDL_SetColorKey(source_surface, SDL_SRCCOLORKEY, pixel);
         #endif

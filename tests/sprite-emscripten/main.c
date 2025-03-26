@@ -31,14 +31,14 @@ void render(void)
             done = 1;
         else if(event.type == SDL_KEYDOWN)
         {
-            if(event.key.keysym.sym == SDLK_ESCAPE)
+            if(event.key.key == SDLK_ESCAPE)
                 done = 1;
-            else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+            else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
             {
                 if(numSprites < MAX_SPRITES)
                     numSprites++;
             }
-            else if(event.key.keysym.sym == SDLK_MINUS)
+            else if(event.key.key == SDLK_MINUS)
             {
                 if(numSprites > 0)
                     numSprites--;

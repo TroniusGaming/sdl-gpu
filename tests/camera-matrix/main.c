@@ -59,43 +59,43 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_r)
+                    else if(event.key.key == SDLK_r)
                     {
                         camera = GPU_GetDefaultCamera();
                     }
-                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    else if(event.key.key == SDLK_RETURN)
                     {
                         if(target == screen)
                             target = buffer->target;
                         else
                             target = screen;
                     }
-					else if (event.key.keysym.sym == SDLK_SPACE)
+					else if (event.key.key == SDLK_SPACE)
 					{
 					    if(screen->using_virtual_resolution)
                             GPU_UnsetVirtualResolution(screen);
                         else
                             GPU_SetVirtualResolution(screen, 400, 400);
 					}
-                    else if(event.key.keysym.sym == SDLK_w)
+                    else if(event.key.key == SDLK_w)
                     {
                         camera.y -= 100;
                     }
-                    else if(event.key.keysym.sym == SDLK_s)
+                    else if(event.key.key == SDLK_s)
                     {
                         camera.y += 100;
                     }
-                    else if(event.key.keysym.sym == SDLK_a)
+                    else if(event.key.key == SDLK_a)
                     {
                         camera.x -= 100;
                     }
-                    else if(event.key.keysym.sym == SDLK_d)
+                    else if(event.key.key == SDLK_d)
                     {
                         camera.x += 100;
                     }
-                    else if(event.key.keysym.sym == SDLK_o)
+                    else if(event.key.key == SDLK_o)
                     {
                         GPU_MatrixMode(target, GPU_PROJECTION);
                         GPU_LoadIdentity();
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
                         GPU_MatrixMode(target, GPU_MODEL);
                     }
-                    else if(event.key.keysym.sym == SDLK_p)
+                    else if(event.key.key == SDLK_p)
                     {
                         GPU_MatrixMode(target, GPU_PROJECTION);
                         GPU_LoadIdentity();

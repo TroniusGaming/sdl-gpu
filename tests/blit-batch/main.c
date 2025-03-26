@@ -706,14 +706,14 @@ int do_interleaved(GPU_Target* screen)
 				done = 1;
 			else if(event.type == SDL_KEYDOWN)
 			{
-				if(event.key.keysym.sym == SDLK_ESCAPE)
+				if(event.key.key == SDLK_ESCAPE)
 					done = 1;
-				else if(event.key.keysym.sym == SDLK_SPACE)
+				else if(event.key.key == SDLK_SPACE)
                 {
 					done = 1;
 					return_value = 2;
                 }
-				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+				else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
 				{
 					if(numSprites < maxSprites)
 						numSprites += 100;
@@ -721,7 +721,7 @@ int do_interleaved(GPU_Target* screen)
                     frameCount = 0;
                     startTime = SDL_GetTicks();
 				}
-				else if(event.key.keysym.sym == SDLK_MINUS)
+				else if(event.key.key == SDLK_MINUS)
 				{
 					if(numSprites > 1)
 						numSprites -= 100;
@@ -852,14 +852,14 @@ int do_separate(GPU_Target* screen)
 				done = 1;
 			else if(event.type == SDL_KEYDOWN)
 			{
-				if(event.key.keysym.sym == SDLK_ESCAPE)
+				if(event.key.key == SDLK_ESCAPE)
 					done = 1;
-				else if(event.key.keysym.sym == SDLK_SPACE)
+				else if(event.key.key == SDLK_SPACE)
                 {
 					done = 1;
 					return_value = 3;
                 }
-				else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+				else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
 				{
 					if(numSprites < maxSprites)
 						numSprites += 100;
@@ -867,7 +867,7 @@ int do_separate(GPU_Target* screen)
                     frameCount = 0;
                     startTime = SDL_GetTicks();
 				}
-				else if(event.key.keysym.sym == SDLK_MINUS)
+				else if(event.key.key == SDLK_MINUS)
 				{
 					if(numSprites > 1)
 						numSprites -= 100;
@@ -1069,14 +1069,14 @@ int do_attributes(GPU_Target* screen)
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         done = 1;
                         return_value = 1;
                     }
-                    else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+                    else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
                     {
                         if(numSprites < maxSprites)
                             numSprites += 100;
@@ -1084,7 +1084,7 @@ int do_attributes(GPU_Target* screen)
                         frameCount = 0;
                         startTime = SDL_GetTicks();
                     }
-                    else if(event.key.keysym.sym == SDLK_MINUS)
+                    else if(event.key.key == SDLK_MINUS)
                     {
                         if(numSprites > 1)
                             numSprites -= 100;

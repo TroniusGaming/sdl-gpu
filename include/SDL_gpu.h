@@ -6,12 +6,23 @@
 #endif
 #include <math.h> // Must be included before SDL.h, otherwise both try to define M_PI and we get a warning
 
+#ifdef USING_SDL3
+#include "SDL3/SDL.h"
+#else
 #include "SDL.h"
+#endif
 #include <stdio.h>
 #include <stdarg.h>
 
 // Use SDL's DLL defines
+#ifdef USING_SDL3
+#include "SDL3/SDL_begin_code.h"
+#define DECLSPEC SDL_DECLSPEC
+#undef SDL_RWops
+#define SDL_RWops SDL_IOStream
+#else
 #include "begin_code.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,8 +31,10 @@ extern "C" {
 // Compile-time version info
 #include "SDL_gpu_version.h"
 
-/* Auto-detect if we're using the SDL2 API by the headers available. */
-#if SDL_VERSION_ATLEAST(2,0,0)
+/* Auto-detect if we're using the SDL, SDL2 or SDL3 API by the headers available. */
+#if SDL_VERSION_ATLEAST(3,0,0)
+	#define SDL_GPU_USE_SDL3
+#elif SDL_VERSION_ATLEAST(2,0,0)
     #define SDL_GPU_USE_SDL2
 #else
     #define SDL_GPU_USE_SDL1
@@ -850,10 +863,23 @@ struct GPU_Renderer
 
 
 
-
+#ifdef USING_SDL3
 /*! \ingroup Initialization
  *  @{ */
+// Visual C does not support static inline
+#ifdef _MSC_VER
+static int SDLCALL GPU_GetCompiledVersion(void)
+#else
+static inline int SDLCALL GPU_GetCompiledVersion(void)
+#endif
+{
+	return SDL_VERSIONNUM(SDL_GPU_VERSION_MAJOR, SDL_GPU_VERSION_MINOR, SDL_GPU_VERSION_PATCH);
+}
 
+DECLSPEC int SDLCALL GPU_GetLinkedVersion(void);
+#else
+/*! \ingroup Initialization
+ *  @{ */
 // Visual C does not support static inline
 #ifdef _MSC_VER
 static SDL_version SDLCALL GPU_GetCompiledVersion(void)
@@ -861,11 +887,12 @@ static SDL_version SDLCALL GPU_GetCompiledVersion(void)
 static inline SDL_version SDLCALL GPU_GetCompiledVersion(void)
 #endif
 {
-    SDL_version v = {SDL_GPU_VERSION_MAJOR, SDL_GPU_VERSION_MINOR, SDL_GPU_VERSION_PATCH};
-    return v;
+	SDL_version v = {SDL_GPU_VERSION_MAJOR, SDL_GPU_VERSION_MINOR, SDL_GPU_VERSION_PATCH};
+	return v;
 }
 
 DECLSPEC SDL_version SDLCALL GPU_GetLinkedVersion(void);
+#endif
 
 /*! The window corresponding to 'windowID' will be used to create the rendering context instead of creating a new window. */
 DECLSPEC void SDLCALL GPU_SetInitWindow(Uint32 windowID);
@@ -2131,7 +2158,11 @@ DECLSPEC void SDLCALL GPU_SetShaderStorageBufferData(Uint32 buffer, int size, co
 }
 #endif
 
+#ifdef USING_SDL3
+#include "SDL3/SDL_close_code.h"
+#else
 #include "close_code.h"
+#endif
 
 
 #endif

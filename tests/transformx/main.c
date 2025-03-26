@@ -47,16 +47,16 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         if(target == screen)
                             target = screen2;
                         else
                             target = screen;
                     }
-                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    else if(event.key.key == SDLK_RETURN)
                     {
                         usingVirtual = !usingVirtual;
                         

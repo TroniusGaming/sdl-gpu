@@ -53,45 +53,45 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    if(event.key.keysym.sym == SDLK_RETURN)
+                    if(event.key.key == SDLK_RETURN)
                         rotate_stuff = !rotate_stuff;
-                    if(event.key.keysym.sym == SDLK_LEFT)
+                    if(event.key.key == SDLK_LEFT)
                         x -= 30;
-                    if(event.key.keysym.sym == SDLK_RIGHT)
+                    if(event.key.key == SDLK_RIGHT)
                         x += 30;
-                    if(event.key.keysym.sym == SDLK_UP)
+                    if(event.key.key == SDLK_UP)
                         y -= 30;
-                    if(event.key.keysym.sym == SDLK_DOWN)
+                    if(event.key.key == SDLK_DOWN)
                         y += 30;
-                    if(event.key.keysym.sym == SDLK_a)
+                    if(event.key.key == SDLK_a)
 						camera.angle -= 30;
-					if (event.key.keysym.sym == SDLK_d)
+					if (event.key.key == SDLK_d)
 						camera.angle += 30;
-					if (event.key.keysym.sym == SDLK_x)
+					if (event.key.key == SDLK_x)
 					{
 						z -= 0.5f;
 						GPU_LogError("z: %.1f\n", z);
 					}
-					if (event.key.keysym.sym == SDLK_z)
+					if (event.key.key == SDLK_z)
 					{
 						z += 0.5f;
 						GPU_LogError("z: %.1f\n", z);
 					}
-					if (event.key.keysym.sym == SDLK_p)
+					if (event.key.key == SDLK_p)
 					{
 						use_perspective = 1;
 						use_camera = 0;
 						GPU_EnableCamera(screen, use_camera);
 					}
-					if (event.key.keysym.sym == SDLK_o)
+					if (event.key.key == SDLK_o)
 					{
 						use_perspective = 0;
 						use_camera = 0;
 						GPU_EnableCamera(screen, use_camera);
 					}
-					if (event.key.keysym.sym == SDLK_c)
+					if (event.key.key == SDLK_c)
 					{
 						use_camera = 1;
 						GPU_EnableCamera(screen, use_camera);

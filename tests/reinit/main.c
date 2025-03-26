@@ -46,12 +46,12 @@ int main_loop()
                 }
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                     {
                         done = 1;
                         result = -1;
                     }
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         done = 1;
                         result = 1;

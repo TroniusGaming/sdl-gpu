@@ -1,4 +1,4 @@
-#include "SDL.h"
+
 #include "SDL_gpu.h"
 
 #ifndef SDL_GPU_BUILD_VIDEO_TEST
@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 
 int main(int argc, char* argv[])
 {
@@ -117,9 +117,9 @@ int main(int argc, char* argv[])
                     done = 1;
                     break;
                 case SDL_KEYDOWN:
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         av_seek_frame(pFormatCtx, 0, 0, 0);
                         playing = (av_read_frame(pFormatCtx, &packet) >= 0);
@@ -275,9 +275,9 @@ int main(int argc, char* argv[])
                     done = 1;
                     break;
                 case SDL_KEYDOWN:
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         av_seek_frame(pFormatCtx, 0, 0, 0);
                         playing = (av_read_frame(pFormatCtx, &packet) >= 0);

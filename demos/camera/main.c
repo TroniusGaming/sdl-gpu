@@ -31,27 +31,27 @@ void main_loop(GPU_Target* screen)
                 done = 1;
             else if(event.type == SDL_KEYDOWN)
             {
-                if(event.key.keysym.sym == SDLK_ESCAPE)
+                if(event.key.key == SDLK_ESCAPE)
                     done = 1;
-                else if(event.key.keysym.sym == SDLK_c)
+                else if(event.key.key == SDLK_c)
                     camera.use_centered_origin = !camera.use_centered_origin;
-                else if(event.key.keysym.sym == SDLK_w)
+                else if(event.key.key == SDLK_w)
                     camera.y -= MOVE_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_s)
+                else if(event.key.key == SDLK_s)
                     camera.y += MOVE_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_a)
+                else if(event.key.key == SDLK_a)
                     camera.x -= MOVE_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_d)
+                else if(event.key.key == SDLK_d)
                     camera.x += MOVE_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_d)
+                else if(event.key.key == SDLK_d)
                     camera.x += MOVE_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_r)
+                else if(event.key.key == SDLK_r)
                     camera.zoom_x = camera.zoom_y += ZOOM_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_f)
+                else if(event.key.key == SDLK_f)
                     camera.zoom_x = camera.zoom_y -= ZOOM_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_q)
+                else if(event.key.key == SDLK_q)
                     camera.angle -= ROTATE_VEL*dt;
-                else if(event.key.keysym.sym == SDLK_e)
+                else if(event.key.key == SDLK_e)
                     camera.angle += ROTATE_VEL*dt;
             }
         }

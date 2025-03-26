@@ -60,7 +60,7 @@ void add_sprite(float* positions, float* colors, float* expanded_colors, float* 
     expanded_colors[4*i] = color.r/255.0f;
     expanded_colors[4*i+1] = color.g/255.0f;
     expanded_colors[4*i+2] = color.b/255.0f;
-    #ifdef SDL_GPU_USE_SDL2
+	#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
     expanded_colors[4*i+3] = color.a/255.0f;
     #else
     expanded_colors[4*i+3] = color.unused/255.0f;
@@ -71,7 +71,7 @@ void add_sprite(float* positions, float* colors, float* expanded_colors, float* 
         colors[4*(4*i+n)] = color.r/255.0f;
         colors[4*(4*i+n)+1] = color.g/255.0f;
         colors[4*(4*i+n)+2] = color.b/255.0f;
-        #ifdef SDL_GPU_USE_SDL2
+		#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
         colors[4*(4*i+n)+3] = color.a/255.0f;
         #else
         colors[4*(4*i+n)+3] = color.unused/255.0f;
@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
             {
                 if(event.type == SDL_QUIT)
                     done = 1;
-                else if(event.type == SDL_MOUSEBUTTONDOWN)
+                else if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                 {
                     if(event.button.x <= 150 && event.button.y <= 150)
                     {
@@ -192,19 +192,19 @@ int main(int argc, char* argv[])
                 }
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+                    else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
                     {
                         if(numSprites < MAX_SPRITES)
                             add_sprite(positions, colors, expanded_colors, src_rects, &numSprites, color, src_rect);
                     }
-                    else if(event.key.keysym.sym == SDLK_MINUS)
+                    else if(event.key.key == SDLK_MINUS)
                     {
                         if(numSprites > 0)
                             numSprites--;
                     }
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         shader_index++;
                         shader_index %= 2;
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
                         else if(shader_index == 1)
                             set_shader(p, &block);
                     }
-                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    else if(event.key.key == SDLK_RETURN)
                     {
                         use_color_expansion = !use_color_expansion;
                         if(use_color_expansion)

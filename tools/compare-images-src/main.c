@@ -118,14 +118,14 @@ int main(int argc, char* argv[])
 					done = 1;
 				else if (event.type == SDL_KEYDOWN)
 				{
-					if (event.key.keysym.sym == SDLK_ESCAPE)
+					if (event.key.key == SDLK_ESCAPE)
 						done = 1;
-					else if (event.key.keysym.sym == SDLK_r)
+					else if (event.key.key == SDLK_r)
 					{
 					    camera = GPU_GetDefaultCamera();
 					}
 				}
-				else if (event.type == SDL_MOUSEBUTTONDOWN)
+				else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
 				{
 					float x, y;
 					GPU_GetVirtualCoords(screen, &x, &y, event.button.x, event.button.y);

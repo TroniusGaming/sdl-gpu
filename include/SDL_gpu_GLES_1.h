@@ -2,7 +2,11 @@
 #define _SDL_GPU_GLES_1_H__
 
 #include "SDL_gpu.h"
+#ifdef USING_SDL3
+#include "SDL3/SDL_platform.h"
+#else
 #include "SDL_platform.h"
+#endif
 
 #if !defined(SDL_GPU_DISABLE_GLES) && !defined(SDL_GPU_DISABLE_GLES_1)
 

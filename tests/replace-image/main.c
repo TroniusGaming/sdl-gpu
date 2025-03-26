@@ -137,13 +137,13 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    if(event.key.keysym.sym == SDLK_r)
+                    if(event.key.key == SDLK_r)
                     {
                         GPU_Clear(image->target);
                     }
-                    if(event.key.keysym.sym == SDLK_SPACE)
+                    if(event.key.key == SDLK_SPACE)
                     {
                         // Replace images with the next surface
                         current_surface++;
@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
                         GPU_ReplaceImage(image, surfaces[current_surface], NULL);
                         GPU_ReplaceImage(selection_image, surfaces[current_surface], NULL);
                     }
-                    if(event.key.keysym.sym == SDLK_RETURN)
+                    if(event.key.key == SDLK_RETURN)
                     {
                         // Replace the main image with a section of the current source surface
                         GPU_ReplaceImage(image, surfaces[current_surface], &surface_rect);

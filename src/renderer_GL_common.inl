@@ -24,7 +24,23 @@ See a particular renderer's *.c file for specifics. */
 #include <string.h>
 
 #include "SDL_gpu.h"    // For poor, dumb Intellisense
+#ifdef USING_SDL3
+#include "SDL3/SDL_platform.h"
+#undef SDL_GetColorKey
+#define SDL_GetColorKey SDL_GetSurfaceColorKey
+#undef SDL_FreeSurface
+#define SDL_FreeSurface SDL_DestroySurface
+#undef SDL_RWseek
+#define SDL_RWseek SDL_SeekIO
+#undef SDL_RWFromFile
+#define SDL_RWFromFile SDL_IOFromFile
+#undef SDL_RWclose
+#define SDL_RWclose SDL_CloseIO
+#undef SDL_RWFromConstMem
+#define SDL_RWFromConstMem SDL_IOFromConstMem
+#else
 #include "SDL_platform.h"
+#endif
 
 // Check for C99 support
 // We'll use it for intptr_t which is used to suppress warnings about converting an int to a ptr for GL calls.
@@ -122,7 +138,7 @@ int gpu_strcasecmp(const char* s1, const char* s2);
 // SDL 1.2 / SDL 2.0 translation layer
 
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 
 #define GET_ALPHA(sdl_color) ((sdl_color).a)
 
@@ -143,7 +159,11 @@ static_inline void get_window_dimensions(SDL_Window* window, int* w, int* h)
 
 static_inline void get_drawable_dimensions(SDL_Window* window, int* w, int* h)
 {
+#ifdef SDL_GPU_USE_SDL3
+	SDL_GetWindowSizeInPixels(window, w, h);
+#else
 	SDL_GL_GetDrawableSize(window, w, h);
+#endif
 }
 
 static_inline void resize_window(GPU_Target* target, int w, int h)
@@ -163,7 +183,11 @@ static_inline GPU_bool has_colorkey(SDL_Surface* surface)
 
 static_inline GPU_bool is_alpha_format(SDL_PixelFormat* format)
 {
+#ifdef SDL_GPU_USE_SDL3
+	return SDL_ISPIXELFORMAT_ALPHA(*format);
+#else
 	return SDL_ISPIXELFORMAT_ALPHA(format->format);
+#endif
 }
 
 #else
@@ -258,9 +282,12 @@ static GPU_bool vendor_is_Intel = GPU_FALSE;
 #endif
 
 
-
+#ifndef SDL_GPU_USE_SDL3
 static SDL_PixelFormat* AllocFormat(GLenum glFormat);
 static void FreeFormat(SDL_PixelFormat* format);
+#else
+static SDL_PixelFormat SDLFormatFromGL(GLenum glFormat);
+#endif
 
 
 static char shader_message[256];
@@ -818,7 +845,7 @@ static void makeContextCurrent(GPU_Renderer* renderer, GPU_Target* target)
 
 	renderer->impl->FlushBlitBuffer(renderer);
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 	SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
 #endif
 	renderer->current_context_target = target;
@@ -1254,7 +1281,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
 	else
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 
 	// GL profile
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);    // Disable in case this is a fallback renderer
@@ -1297,7 +1324,7 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
 	renderer->requested_id = renderer_request;
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 
 	window = NULL;
 	// Is there a window already set up that we are supposed to use?
@@ -1318,11 +1345,17 @@ static GPU_Target* Init(GPU_Renderer* renderer, GPU_RendererID renderer_request,
 
 		// Set up window flags
 		SDL_flags |= SDL_WINDOW_OPENGL;
+#ifndef SDL_GPU_USE_SDL3
 		if (!(SDL_flags & SDL_WINDOW_HIDDEN))
 			SDL_flags |= SDL_WINDOW_SHOWN;
+#endif
 
 		renderer->SDL_init_flags = SDL_flags;
+#ifdef SDL_GPU_USE_SDL3
+		window = SDL_CreateWindow("", win_w, win_h, SDL_flags);
+#else
 		window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, win_w, win_h, SDL_flags);
+#endif
 
 		if (window == NULL)
 		{
@@ -1559,7 +1592,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 	// Store the window info
 	target->context->windowID = get_window_id(window);
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 	// Make a new context if needed and make it current
 	if (created || target->context->context == NULL)
 	{
@@ -1579,7 +1612,7 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 	}
 
 	// We need a GL context before we can get the drawable size.
-	SDL_GL_GetDrawableSize(window, &target->context->drawable_w, &target->context->drawable_h);
+	get_drawable_dimensions(window, &target->context->drawable_w, &target->context->drawable_h);
 
 #else
 
@@ -1686,7 +1719,19 @@ static GPU_Target* CreateTargetFromWindow(GPU_Renderer* renderer, Uint32 windowI
 		return NULL;
 	}
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL3)
+	// No preference for vsync?
+	if (!(renderer->GPU_init_flags & (GPU_INIT_DISABLE_VSYNC | GPU_INIT_ENABLE_VSYNC)))
+	{
+		// Default to late swap vsync if available
+		if (!SDL_GL_SetSwapInterval(-1))
+			SDL_GL_SetSwapInterval(1);    // Or go for vsync
+	}
+	else if (renderer->GPU_init_flags & GPU_INIT_ENABLE_VSYNC)
+		SDL_GL_SetSwapInterval(1);
+	else if (renderer->GPU_init_flags & GPU_INIT_DISABLE_VSYNC)
+		SDL_GL_SetSwapInterval(0);
+#else
 	// No preference for vsync?
 	if (!(renderer->GPU_init_flags & (GPU_INIT_DISABLE_VSYNC | GPU_INIT_ENABLE_VSYNC)))
 	{
@@ -1930,12 +1975,12 @@ static void MakeCurrent(GPU_Renderer* renderer, GPU_Target* target, Uint32 windo
 		return;
 
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 	if (target->context->context != NULL)
 #endif
 	{
 		renderer->current_context_target = target;
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 		SDL_GL_MakeCurrent(SDL_GetWindowFromID(windowID), target->context->context);
 #endif
 
@@ -1992,7 +2037,7 @@ static void ResetRendererState(GPU_Renderer* renderer)
 		glUseProgram(target->context->current_shader_program);
 #endif
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 	SDL_GL_MakeCurrent(SDL_GetWindowFromID(target->context->windowID), target->context->context);
 #endif
 
@@ -2197,7 +2242,7 @@ static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen
 {
 	GPU_Target* target = renderer->current_context_target;
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 	SDL_Window* window = SDL_GetWindowFromID(target->context->windowID);
 	Uint32 old_flags = SDL_GetWindowFlags(window);
 	GPU_bool was_fullscreen = (old_flags & SDL_WINDOW_FULLSCREEN);
@@ -2207,13 +2252,21 @@ static GPU_bool SetFullscreen(GPU_Renderer* renderer, GPU_bool enable_fullscreen
 
 	if (enable_fullscreen)
 	{
+#ifdef SDL_GPU_USE_SDL3
+		flags = SDL_WINDOW_FULLSCREEN;
+#else
 		if (use_desktop_resolution)
 			flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
 		else
 			flags = SDL_WINDOW_FULLSCREEN;
+#endif
 	}
 
+#ifdef SDL_GPU_USE_SDL3
+	if (SDL_SetWindowFullscreen(window, flags))
+#else
 	if (SDL_SetWindowFullscreen(window, flags) >= 0)
+#endif
 	{
 		flags = SDL_GetWindowFlags(window);
 		is_fullscreen = (flags & SDL_WINDOW_FULLSCREEN);
@@ -2867,7 +2920,6 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
 {
 	unsigned char* data;
 	SDL_Surface* result;
-	SDL_PixelFormat* format;
 
 	if (target == NULL)
 	{
@@ -2888,9 +2940,17 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
 		return NULL;
 	}
 
-	format = AllocFormat(((GPU_TARGET_DATA*)target->data)->format);
-
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	result = SDL_CreateSurface(target->base_w, target->base_h, SDLFormatFromGL(((GPU_TARGET_DATA*)target->data)->format));
+	const SDL_PixelFormatDetails* details = result ? SDL_GetPixelFormatDetails(result->format) : NULL;
+	bytes_per_pixel = details ? details->bytes_per_pixel : 0;
+#else
+	SDL_PixelFormat* format = AllocFormat(((GPU_TARGET_DATA*)target->data)->format);
 	result = SDL_CreateRGBSurface(SDL_SWSURFACE, target->base_w, target->base_h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	bytes_per_pixel = format->BytesPerPixel;
+	FreeFormat(format);
+#endif
 
 	if (result == NULL)
 	{
@@ -2902,13 +2962,12 @@ static SDL_Surface* CopySurfaceFromTarget(GPU_Renderer* renderer, GPU_Target* ta
 	// Copy row-by-row in case the pitch doesn't match
 	{
 		int i;
-		int source_pitch = target->base_w * format->BytesPerPixel;
+		int source_pitch = target->base_w * bytes_per_pixel;
 		for (i = 0; i < target->base_h; ++i) { memcpy((Uint8*)result->pixels + i * result->pitch, data + source_pitch * i, source_pitch); }
 	}
 
 	SDL_free(data);
 
-	FreeFormat(format);
 	return result;
 }
 
@@ -2916,7 +2975,6 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 {
 	unsigned char* data;
 	SDL_Surface* result;
-	SDL_PixelFormat* format;
 	int w, h;
 
 	if (image == NULL)
@@ -2949,9 +3007,17 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 		return NULL;
 	}
 
-	format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
-
-	result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	result = SDL_CreateSurface(w, h, SDLFormatFromGL(((GPU_IMAGE_DATA*)image->data)->format));
+	const SDL_PixelFormatDetails* details = result ? SDL_GetPixelFormatDetails(result->format) : NULL;
+	bytes_per_pixel = details ? details->bytes_per_pixel : 0;
+#else
+	SDL_PixelFormat* format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
+	result = SDL_CreateRGBSurface(SDL_SWSURFACE, target->base_w, target->base_h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	bytes_per_pixel = format->BytesPerPixel;
+	FreeFormat(format);
+#endif
 
 	if (result == NULL)
 	{
@@ -2963,13 +3029,12 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 	// Copy row-by-row in case the pitch doesn't match
 	{
 		int i;
-		int source_pitch = image->texture_w * format->BytesPerPixel;    // Use the actual texture width to pull from the data
+		int source_pitch = image->texture_w * bytes_per_pixel;    // Use the actual texture width to pull from the data
 		for (i = 0; i < h; ++i) { memcpy((Uint8*)result->pixels + i * result->pitch, data + source_pitch * i, result->pitch); }
 	}
 
 	SDL_free(data);
 
-	FreeFormat(format);
 	return result;
 }
 
@@ -3045,26 +3110,34 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 	}
 }
 #else
+#ifdef SDL_GPU_USE_SDL3
 // GL_RGB/GL_RGBA and Surface format
 static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
 {
-	SDL_PixelFormat* format = surface->format;
+	const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(surface->format);
+	if (!details)
+	{
+		if (!glFormat)
+			return 0;
+		GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid surface pixel format (0x%x)", surface->format); return -1;
+	}
+
 	switch (glFormat)
 	{
 			// 3-channel formats
 		case GL_RGB:
-			if (format->BytesPerPixel != 3)
+			if (details->bytes_per_pixel != 3)
 				return 1;
 
 			// Looks like RGB?  Easy!
-			if (format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
+			if (details->Rmask == 0x0000FF && details->Gmask == 0x00FF00 && details->Bmask == 0xFF0000)
 			{
 				if (surfaceFormatResult != NULL)
 					*surfaceFormatResult = GL_RGB;
 				return 0;
 			}
 			// Looks like BGR?
-			if (format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
+			if (details->Rmask == 0xFF0000 && details->Gmask == 0x00FF00 && details->Bmask == 0x0000FF)
 			{
 #ifdef GL_BGR
 				if (renderer->enabled_features & GPU_FEATURE_GL_BGR)
@@ -3080,18 +3153,18 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 			// 4-channel formats
 		case GL_RGBA:
 
-			if (format->BytesPerPixel != 4)
+			if (details->bytes_per_pixel != 4)
 				return 1;
 
 			// Looks like RGBA?  Easy!
-			if (format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
+			if (details->Rmask == 0x000000FF && details->Gmask == 0x0000FF00 && details->Bmask == 0x00FF0000)
 			{
 				if (surfaceFormatResult != NULL)
 					*surfaceFormatResult = GL_RGBA;
 				return 0;
 			}
 			// Looks like ABGR?
-			if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
+			if (details->Rmask == 0xFF000000 && details->Gmask == 0x00FF0000 && details->Bmask == 0x0000FF00)
 			{
 #ifdef GL_ABGR
 				if (renderer->enabled_features & GPU_FEATURE_GL_ABGR)
@@ -3103,7 +3176,7 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 #endif
 			}
 			// Looks like BGRA?
-			else if (format->Rmask == 0x00FF0000 && format->Gmask == 0x0000FF00 && format->Bmask == 0x000000FF)
+			else if (details->Rmask == 0x00FF0000 && details->Gmask == 0x0000FF00 && details->Bmask == 0x000000FF)
 			{
 #ifdef GL_BGRA
 				if (renderer->enabled_features & GPU_FEATURE_GL_BGRA)
@@ -3119,9 +3192,139 @@ static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* 
 		default: GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (0x%x)", glFormat); return -1;
 	}
 }
+#else
+// GL_RGB/GL_RGBA and Surface format
+static int compareFormats(GPU_Renderer* renderer, GLenum glFormat, SDL_Surface* surface, GLenum* surfaceFormatResult)
+{
+	SDL_PixelFormat* format = surface->format;
+	switch (glFormat)
+	{
+		// 3-channel formats
+		case GL_RGB:
+			if (format->BytesPerPixel != 3)
+				return 1;
+
+		// Looks like RGB?  Easy!
+		if (format->Rmask == 0x0000FF && format->Gmask == 0x00FF00 && format->Bmask == 0xFF0000)
+		{
+			if (surfaceFormatResult != NULL)
+				*surfaceFormatResult = GL_RGB;
+			return 0;
+		}
+		// Looks like BGR?
+		if (format->Rmask == 0xFF0000 && format->Gmask == 0x00FF00 && format->Bmask == 0x0000FF)
+		{
+#ifdef GL_BGR
+			if (renderer->enabled_features & GPU_FEATURE_GL_BGR)
+			{
+				if (surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGR;
+				return 0;
+			}
+#endif
+		}
+		return 1;
+
+		// 4-channel formats
+		case GL_RGBA:
+
+			if (format->BytesPerPixel != 4)
+				return 1;
+
+		// Looks like RGBA?  Easy!
+		if (format->Rmask == 0x000000FF && format->Gmask == 0x0000FF00 && format->Bmask == 0x00FF0000)
+		{
+			if (surfaceFormatResult != NULL)
+				*surfaceFormatResult = GL_RGBA;
+			return 0;
+		}
+		// Looks like ABGR?
+		if (format->Rmask == 0xFF000000 && format->Gmask == 0x00FF0000 && format->Bmask == 0x0000FF00)
+		{
+#ifdef GL_ABGR
+			if (renderer->enabled_features & GPU_FEATURE_GL_ABGR)
+			{
+				if (surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_ABGR;
+				return 0;
+			}
+#endif
+		}
+		// Looks like BGRA?
+		else if (format->Rmask == 0x00FF0000 && format->Gmask == 0x0000FF00 && format->Bmask == 0x000000FF)
+		{
+#ifdef GL_BGRA
+			if (renderer->enabled_features & GPU_FEATURE_GL_BGRA)
+			{
+				// ARGB, for OpenGL BGRA
+				if (surfaceFormatResult != NULL)
+					*surfaceFormatResult = GL_BGRA;
+				return 0;
+			}
+#endif
+		}
+		return 1;
+		default: GPU_PushErrorCode("GPU_CompareFormats", GPU_ERROR_DATA_ERROR, "Invalid texture format (0x%x)", glFormat); return -1;
+	}
+}
+#endif
 #endif
 
 
+#ifdef SDL_GPU_USE_SDL3
+static SDL_PixelFormat SDLFormatFromGL(GLenum glFormat)
+{
+	// Yes, I need to do the whole thing myself... :(
+	Uint8 channels;
+	Uint32 Rmask, Gmask, Bmask, Amask = 0;
+
+	switch (glFormat)
+	{
+		case GL_RGB:
+			channels = 3;
+		Rmask = 0x0000FF;
+		Gmask = 0x00FF00;
+		Bmask = 0xFF0000;
+		break;
+#ifdef GL_BGR
+		case GL_BGR:
+			channels = 3;
+		Rmask = 0xFF0000;
+		Gmask = 0x00FF00;
+		Bmask = 0x0000FF;
+		break;
+#endif
+		case GL_RGBA:
+			channels = 4;
+		Rmask = 0x000000FF;
+		Gmask = 0x0000FF00;
+		Bmask = 0x00FF0000;
+		Amask = 0xFF000000;
+		break;
+#ifdef GL_BGRA
+		case GL_BGRA:
+			channels = 4;
+		Rmask = 0x00FF0000;
+		Gmask = 0x0000FF00;
+		Bmask = 0x000000FF;
+		Amask = 0xFF000000;
+		break;
+#endif
+#ifdef GL_ABGR
+		case GL_ABGR:
+			channels = 4;
+		Rmask = 0xFF000000;
+		Gmask = 0x00FF0000;
+		Bmask = 0x0000FF00;
+		Amask = 0x000000FF;
+		break;
+#endif
+		default: return SDL_PIXELFORMAT_UNKNOWN;
+	}
+
+	return SDL_GetPixelFormatForMasks(8 * channels, Rmask, Gmask, Bmask, Amask);
+}
+#else
 // Adapted from SDL_AllocFormat()
 static SDL_PixelFormat* AllocFormat(GLenum glFormat)
 {
@@ -3225,6 +3428,7 @@ static void FreeFormat(SDL_PixelFormat* format)
 {
 	SDL_free(format);
 }
+#endif
 
 
 // Returns NULL on failure.  Returns the original surface if no copy is needed.  Returns a new surface converted to the right format otherwise.
@@ -3242,9 +3446,13 @@ static SDL_Surface* copySurfaceIfNeeded(GPU_Renderer* renderer, GLenum glFormat,
 	if (format_compare > 0)
 	{
 		// Convert to the right format
+#ifdef SDL_GPU_USE_SDL3
+		surface = SDL_ConvertSurface(surface, SDLFormatFromGL(glFormat));
+#else
 		SDL_PixelFormat* dst_fmt = AllocFormat(glFormat);
 		surface = SDL_ConvertSurface(surface, dst_fmt, 0);
 		FreeFormat(dst_fmt);
+#endif
 		if (surfaceFormatResult != NULL && surface != NULL)
 			*surfaceFormatResult = glFormat;
 	}
@@ -3510,10 +3718,19 @@ static void UpdateImage(GPU_Renderer* renderer, GPU_Image* image, const GPU_Rect
 
 	pixels = (Uint8*)newSurface->pixels;
 	// Shift the pixels pointer to the proper source position
-	pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel) * sourceRect.x);
 
-	upload_texture(pixels, updateRect, original_format, alignment, newSurface->pitch / newSurface->format->BytesPerPixel, newSurface->pitch,
-	               newSurface->format->BytesPerPixel);
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(newSurface->format);
+	bytes_per_pixel = details ? details->bytes_per_pixel : 0;
+#else
+	bytes_per_pixel = newSurface->format->BytesPerPixel;
+#endif
+
+	pixels += (int)(newSurface->pitch * sourceRect.y + bytes_per_pixel * sourceRect.x);
+
+	upload_texture(pixels, updateRect, original_format, alignment, newSurface->pitch / bytes_per_pixel, newSurface->pitch,
+	               bytes_per_pixel);
 
 	// Delete temporary surface
 	if (surface != newSurface)
@@ -3710,10 +3927,17 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
 
 	pixels = (Uint8*)newSurface->pixels;
 	// Shift the pixels pointer to the proper source position
-	pixels += (int)(newSurface->pitch * sourceRect.y + (newSurface->format->BytesPerPixel) * sourceRect.x);
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(newSurface->format);
+	bytes_per_pixel = details ? details->bytes_per_pixel : 0;
+#else
+	bytes_per_pixel = newSurface->format->BytesPerPixel;
+#endif
+	pixels += (int)(newSurface->pitch * sourceRect.y + bytes_per_pixel * sourceRect.x);
 
-	upload_new_texture(pixels, GPU_MakeRect(0, 0, (float)w, (float)h), internal_format, alignment, (newSurface->pitch / newSurface->format->BytesPerPixel),
-	                   newSurface->format->BytesPerPixel);
+	upload_new_texture(pixels, GPU_MakeRect(0, 0, (float)w, (float)h), internal_format, alignment, (newSurface->pitch / bytes_per_pixel),
+	                   bytes_per_pixel);
 
 
 	// Delete temporary surface
@@ -3768,15 +3992,30 @@ static GPU_bool ReplaceImage(GPU_Renderer* renderer, GPU_Image* image, SDL_Surfa
 static_inline Uint32 getPixel(SDL_Surface* Surface, int x, int y)
 {
 	Uint8* bits;
-	Uint32 bpp;
 
 	if (x < 0 || x >= Surface->w)
 		return 0;    // Best I could do for errors
 
-	bpp = Surface->format->BytesPerPixel;
-	bits = ((Uint8*)Surface->pixels) + y * Surface->pitch + x * bpp;
+	int Rshift, Gshift, Bshift;
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(Surface->format);
+	if (!details)
+		return 0;
+	bytes_per_pixel = details->bytes_per_pixel;
+	Rshift = details->Rshift;
+	Gshift = details->Gshift;
+	Bshift = details->Bshift;
+#else
+	Rshift = Surface->format->Rshift;
+	Gshift = Surface->format->Gshift;
+	Bshift = Surface->format->Bshift;
+	bytes_per_pixel = Surface->format->BytesPerPixel;
+#endif
 
-	switch (bpp)
+	bits = ((Uint8*)Surface->pixels) + y * Surface->pitch + x * bytes_per_pixel;
+
+	switch (bytes_per_pixel)
 	{
 		case 1: return *((Uint8*)Surface->pixels + y * Surface->pitch + x); break;
 		case 2: return *((Uint16*)Surface->pixels + y * Surface->pitch / 2 + x); break;
@@ -3784,10 +4023,14 @@ static_inline Uint32 getPixel(SDL_Surface* Surface, int x, int y)
 			// Endian-correct, but slower
 			{
 				Uint8 r, g, b;
-				r = *((bits) + Surface->format->Rshift / 8);
-				g = *((bits) + Surface->format->Gshift / 8);
-				b = *((bits) + Surface->format->Bshift / 8);
+				r = *((bits) + Rshift / 8);
+				g = *((bits) + Gshift / 8);
+				b = *((bits) + Bshift / 8);
+#ifdef SDL_GPU_USE_SDL3
+				return SDL_MapRGB(details, SDL_GetSurfacePalette(Surface), r, g, b);
+#else
 				return SDL_MapRGB(Surface->format, r, g, b);
+#endif
 			}
 			break;
 		case 4: return *((Uint32*)Surface->pixels + y * Surface->pitch / 4 + x); break;
@@ -3817,6 +4060,16 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 	}
 
 	// See what the best image format is.
+#ifdef SDL_GPU_USE_SDL3
+	const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(surface->format);
+	if (details && details->Amask == 0)
+	{
+		if (has_colorkey(surface) || is_alpha_format(&surface->format))
+			format = GPU_FORMAT_RGBA;
+		else
+			format = GPU_FORMAT_RGB;
+	}
+#else
 	if (surface->format->Amask == 0)
 	{
 		if (has_colorkey(surface) || is_alpha_format(surface->format))
@@ -3824,6 +4077,7 @@ static GPU_Image* CopyImageFromSurface(GPU_Renderer* renderer, SDL_Surface* surf
 		else
 			format = GPU_FORMAT_RGB;
 	}
+#endif
 	else
 	{
 		// TODO: Choose the best format for the texture depending on endianness.
@@ -4042,7 +4296,10 @@ static void FreeContext(GPU_Context* context)
 #endif
 	}
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL3)
+	if (context->context != 0)
+		SDL_GL_DestroyContext(context->context);
+#elif defined(SDL_GPU_USE_SDL2)
 	if (context->context != 0)
 		SDL_GL_DeleteContext(context->context);
 #endif
@@ -5738,7 +5995,7 @@ static void Flip(GPU_Renderer* renderer, GPU_Target* target)
 	{
 		makeContextCurrent(renderer, target);
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
 		SDL_GL_SwapWindow(SDL_GetWindowFromID(renderer->current_context_target->context->windowID));
 #else
 		SDL_GL_SwapBuffers();
@@ -5767,7 +6024,11 @@ static Uint32 GetShaderSource(const char* filename, char* result);
 static void read_until_end_of_comment(SDL_RWops* rwops, char multiline)
 {
 	char buffer;
+#ifdef SDL_GPU_USE_SDL3
+	while (SDL_ReadIO(rwops, &buffer, 1) > 0)
+#else
 	while (SDL_RWread(rwops, &buffer, 1, 1) > 0)
+#endif
 	{
 		if (!multiline)
 		{
@@ -5779,7 +6040,11 @@ static void read_until_end_of_comment(SDL_RWops* rwops, char multiline)
 			if (buffer == '*')
 			{
 				// If the stream ends at the next character or it is a '/', then we're done.
+#ifdef SDL_GPU_USE_SDL3
+				if (SDL_ReadIO(rwops, &buffer, 1) <= 0 || buffer == '/')
+#else
 				if (SDL_RWread(rwops, &buffer, 1, 1) <= 0 || buffer == '/')
+#endif
 					break;
 			}
 		}
@@ -5801,7 +6066,11 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 	// Read 1 byte at a time until we reach the end
 	last_char = ' ';
 	len = 0;
+#ifdef SDL_GPU_USE_SDL3
+	while ((len = SDL_ReadIO(shader_source, &buffer, 1)) > 0)
+#else
 	while ((len = SDL_RWread(shader_source, &buffer, 1, 1)) > 0)
+#endif
 	{
 		// Follow through an #include directive?
 		if (buffer[0] == '#')
@@ -5810,7 +6079,11 @@ static Uint32 GetShaderSourceSize_RW(SDL_RWops* shader_source)
 			int line_size = 1;
 			unsigned long line_len;
 			char* token;
+#ifdef SDL_GPU_USE_SDL3
+			while ((line_len = SDL_ReadIO(shader_source, buffer + line_size, 1)) > 0)
+#else
 			while ((line_len = SDL_RWread(shader_source, buffer + line_size, 1, 1)) > 0)
+#endif
 			{
 				line_size += line_len;
 				if (buffer[line_size - line_len] == '\n')
@@ -5881,7 +6154,11 @@ static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
 	// Read 1 byte at a time until we reach the end
 	last_char = ' ';
 	len = 0;
+#ifdef SDL_GPU_USE_SDL3
+	while ((len = SDL_ReadIO(shader_source, &buffer, 1)) > 0)
+#else
 	while ((len = SDL_RWread(shader_source, &buffer, 1, 1)) > 0)
+#endif
 	{
 		// Follow through an #include directive?
 		if (buffer[0] == '#')
@@ -5891,7 +6168,11 @@ static Uint32 GetShaderSource_RW(SDL_RWops* shader_source, char* result)
 			unsigned long line_len;
 			char token_buffer[512];    // strtok() is destructive
 			char* token;
+#ifdef SDL_GPU_USE_SDL3
+			while ((line_len = SDL_ReadIO(shader_source, buffer + line_size, 1)) > 0)
+#else
 			while ((line_len = SDL_RWread(shader_source, buffer + line_size, 1, 1)) > 0)
+#endif
 			{
 				line_size += line_len;
 				if (buffer[line_size - line_len] == '\n')

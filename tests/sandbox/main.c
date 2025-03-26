@@ -52,11 +52,11 @@ int main(int argc, char* argv[])
 					done = 1;
 				else if (event.type == SDL_KEYDOWN)
 				{
-					if (event.key.keysym.sym == SDLK_ESCAPE)
+					if (event.key.key == SDLK_ESCAPE)
 						done = 1;
-					else if (event.key.keysym.sym == SDLK_f)
+					else if (event.key.key == SDLK_f)
 						GPU_SetFullscreen(!GPU_GetFullscreen(), 0);
-					else if (event.key.keysym.sym == SDLK_g)
+					else if (event.key.key == SDLK_g)
 						GPU_SetFullscreen(!GPU_GetFullscreen(), 1);
 				}
 			}

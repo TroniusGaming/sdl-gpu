@@ -57,23 +57,23 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-					else if (event.key.keysym.sym == SDLK_f)
+					else if (event.key.key == SDLK_f)
 						GPU_SetFullscreen(!GPU_GetFullscreen(), 0);
-					else if (event.key.keysym.sym == SDLK_g)
+					else if (event.key.key == SDLK_g)
 						GPU_SetFullscreen(!GPU_GetFullscreen(), 1);
-					else if (event.key.keysym.sym == SDLK_1)
+					else if (event.key.key == SDLK_1)
 						GPU_UnsetVirtualResolution(screen);
-					else if (event.key.keysym.sym == SDLK_2)
+					else if (event.key.key == SDLK_2)
 						GPU_SetVirtualResolution(screen, 100, 100);
-					else if (event.key.keysym.sym == SDLK_3)
+					else if (event.key.key == SDLK_3)
 						GPU_SetVirtualResolution(screen, 320, 240);
-					else if (event.key.keysym.sym == SDLK_4)
+					else if (event.key.key == SDLK_4)
 						GPU_SetVirtualResolution(screen, 640, 480);
-					else if (event.key.keysym.sym == SDLK_5)
+					else if (event.key.key == SDLK_5)
 						GPU_SetVirtualResolution(screen, 800, 600);
-					else if (event.key.keysym.sym == SDLK_6)
+					else if (event.key.key == SDLK_6)
 						GPU_SetVirtualResolution(screen, 1024, 768);
                 }
             }

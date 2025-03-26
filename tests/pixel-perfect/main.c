@@ -73,21 +73,21 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    else if(event.key.key == SDLK_RETURN)
                     {
                         mode++;
                         if(mode >= num_modes)
                             mode = 0;
                     }
-                    else if(event.key.keysym.sym == SDLK_r)
+                    else if(event.key.key == SDLK_r)
                     {
                         x = y = 0.0f;
 
                         camera = GPU_GetDefaultCamera();
                     }
-                    else if(event.key.keysym.sym == SDLK_f)
+                    else if(event.key.key == SDLK_f)
                     {
                         if(image->filter_mode == GPU_FILTER_NEAREST)
                         {
@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
                             GPU_LogError("GPU_FILTER_NEAREST\n");
                         }
                     }
-                    else if(event.key.keysym.sym == SDLK_p)
+                    else if(event.key.key == SDLK_p)
                     {
                         GPU_SnapEnum mode = GPU_GetSnapMode(image);
                         if(mode == GPU_SNAP_POSITION_AND_DIMENSIONS)
@@ -130,16 +130,16 @@ int main(int argc, char* argv[])
                             GPU_LogError("Pixel snap POSITION_AND_DIMENSIONS\n");
                         }
                     }
-                    else if(event.key.keysym.sym == SDLK_UP)
+                    else if(event.key.key == SDLK_UP)
                         y -= 1.0f;
-                    else if(event.key.keysym.sym == SDLK_DOWN)
+                    else if(event.key.key == SDLK_DOWN)
                         y += 1.0f;
-                    else if(event.key.keysym.sym == SDLK_LEFT)
+                    else if(event.key.key == SDLK_LEFT)
                         x -= 1.0f;
-                    else if(event.key.keysym.sym == SDLK_RIGHT)
+                    else if(event.key.key == SDLK_RIGHT)
                         x += 1.0f;
                 }
-                else if(event.type == SDL_KEYUP)
+                else if(event.type == SDL_EVENT_KEY_UP)
                 {
                     GPU_LogError("x, y: (%.2f, %.2f)\n", x, y);
                 }

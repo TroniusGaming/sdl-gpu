@@ -1,6 +1,18 @@
 #include "SDL_gpu.h"
 #include "SDL_gpu_RendererImpl.h"
+#ifdef USING_SDL3
+#include "SDL3/SDL_platform.h"
+#undef SDL_RWFromFile
+#define SDL_RWFromFile SDL_IOFromFile
+#undef SDL_FreeSurface
+#define SDL_FreeSurface SDL_DestroySurface
+#undef SDL_RWseek
+#define SDL_RWseek SDL_SeekIO
+#undef SDL_RWclose
+#define SDL_RWclose SDL_CloseIO
+#else
 #include "SDL_platform.h"
+#endif
 #include "stb_image.h"
 #include "stb_image_write.h"
 #include <stdlib.h>
@@ -24,7 +36,7 @@
 
 #include "stb_image.h"
 
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2) || defined(SDL_GPU_USE_SDL3)
     #define GET_ALPHA(sdl_color) ((sdl_color).a)
 #else
     #define GET_ALPHA(sdl_color) ((sdl_color).unused)
@@ -77,11 +89,17 @@ static GPU_bool _gpu_initialized_SDL = GPU_FALSE;
 
 static int (*_gpu_print)(GPU_LogLevelEnum log_level, const char* format, va_list args) = &gpu_default_print;
 
-
-SDL_version GPU_GetLinkedVersion(void)
+#ifdef USING_SDL3
+int GPU_GetLinkedVersion(void)
 {
     return GPU_GetCompiledVersion();
 }
+#else
+SDL_version GPU_GetLinkedVersion(void)
+{
+	return GPU_GetCompiledVersion();
+}
+#endif
 
 void GPU_SetCurrentRenderer(GPU_RendererID id)
 {
@@ -190,10 +208,18 @@ static GPU_bool gpu_init_SDL(void)
 {
     if(!_gpu_initialized_SDL)
     {
+#ifdef SDL_GPU_USE_SDL3
+        if(!_gpu_initialized_SDL_core && !SDL_WasInit(SDL_INIT_VIDEO))
+#else
         if(!_gpu_initialized_SDL_core && !SDL_WasInit(SDL_INIT_EVERYTHING))
+#endif
         {
             // Nothing has been set up, so init SDL and the video subsystem.
+#ifdef SDL_GPU_USE_SDL3
+            if(!SDL_Init(SDL_INIT_VIDEO))
+#else
             if(SDL_Init(SDL_INIT_VIDEO) < 0)
+#endif
             {
                 GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
                 return GPU_FALSE;
@@ -202,7 +228,11 @@ static GPU_bool gpu_init_SDL(void)
         }
 
         // SDL is definitely ready now, but we're going to init the video subsystem to be sure that SDL_gpu keeps it available until GPU_Quit().
+#ifdef SDL_GPU_USE_SDL3
+        if(!SDL_InitSubSystem(SDL_INIT_VIDEO))
+#else
         if(SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+#endif
         {
             GPU_PushErrorCode("GPU_Init", GPU_ERROR_BACKEND_ERROR, "Failed to initialize SDL video subsystem");
             return GPU_FALSE;
@@ -519,12 +549,18 @@ GPU_bool GPU_SetFullscreen(GPU_bool enable_fullscreen, GPU_bool use_desktop_reso
 
 GPU_bool GPU_GetFullscreen(void)
 {
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2)
     GPU_Target* target = GPU_GetContextTarget();
     if(target == NULL)
         return GPU_FALSE;
     return (SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
                    & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0;
+#elif defined(SDL_GPU_USE_SDL3)
+	GPU_Target* target = GPU_GetContextTarget();
+	if(target == NULL)
+		return GPU_FALSE;
+	return (SDL_GetWindowFlags(SDL_GetWindowFromID(target->context->windowID))
+				   & (SDL_WINDOW_FULLSCREEN)) != 0;
 #else
     SDL_Surface* surf = SDL_GetVideoSurface();
     if(surf == NULL)
@@ -1108,7 +1144,11 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         break;
     }
 
+#ifdef SDL_GPU_USE_SDL3
+    result = SDL_CreateSurface(width, height, SDL_GetPixelFormatForMasks(channels*8, Rmask, Gmask, Bmask, Amask));
+#else
     result = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, channels*8, Rmask, Gmask, Bmask, Amask);
+#endif
     //result = SDL_CreateRGBSurfaceFrom(data, width, height, channels * 8, width * channels, Rmask, Gmask, Bmask, Amask);
     if(result == NULL)
     {
@@ -1121,8 +1161,12 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
     {
         memcpy((Uint8*)result->pixels + i*result->pitch, data + channels*width*i, channels*width);
     }
-    
+
+#if defined(SDL_GPU_USE_SDL3)
+    if(result != NULL && result->format != SDL_PIXELFORMAT_UNKNOWN)
+#else
     if(result != NULL && result->format->palette != NULL)
+#endif
     {
         // SDL_CreateRGBSurface has no idea what palette to use, so it uses a blank one.
         // We'll at least create a grayscale one, but it's not ideal...
@@ -1135,8 +1179,10 @@ static SDL_Surface* gpu_copy_raw_surface_data(unsigned char* data, int width, in
         }
 
         /* Set palette */
-#ifdef SDL_GPU_USE_SDL2
+#if defined(SDL_GPU_USE_SDL2)
         SDL_SetPaletteColors(result->format->palette, colors, 0, 256);
+#elif defined(SDL_GPU_USE_SDL3)
+        SDL_SetPaletteColors(SDL_GetSurfacePalette(result), colors, 0, 256);
 #else
         SDL_SetPalette(result, SDL_LOGPAL, colors, 0, 256);
 #endif
@@ -1167,7 +1213,11 @@ SDL_Surface* GPU_LoadSurface_RW(SDL_RWops* rwops, GPU_bool free_rwops)
     
     // Read in the rwops data
     c_data = (unsigned char*)SDL_malloc(data_bytes);
+#ifdef SDL_GPU_USE_SDL3
+    SDL_ReadIO(rwops, c_data, data_bytes);
+#else
     SDL_RWread(rwops, c_data, 1, data_bytes);
+#endif
     
     // Load image
     data = stbi_load_from_memory(c_data, data_bytes, &width, &height, &channels, 0);
@@ -1235,16 +1285,23 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
         }
     }
 
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	const SDL_PixelFormatDetails* f = SDL_GetPixelFormatDetails(surface->format);
+	bytes_per_pixel = f ? f->bytes_per_pixel : 0;
+#else
+	bytes_per_pixel = surface->format->BytesPerPixel;
+#endif
     switch(format)
     {
     case GPU_FILE_PNG:
-        result = (stbi_write_png(filename, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, 0) > 0);
+        result = (stbi_write_png(filename, surface->w, surface->h, bytes_per_pixel, (const unsigned char *const)data, 0) > 0);
         break;
     case GPU_FILE_BMP:
-        result = (stbi_write_bmp(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
+        result = (stbi_write_bmp(filename, surface->w, surface->h, bytes_per_pixel, (void*)data) > 0);
         break;
     case GPU_FILE_TGA:
-        result = (stbi_write_tga(filename, surface->w, surface->h, surface->format->BytesPerPixel, (void*)data) > 0);
+        result = (stbi_write_tga(filename, surface->w, surface->h, bytes_per_pixel, (void*)data) > 0);
         break;
     default:
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");
@@ -1257,7 +1314,11 @@ GPU_bool GPU_SaveSurface(SDL_Surface* surface, const char* filename, GPU_FileFor
 
 static void write_func(void *context, void *data, int size)
 {
+#ifdef SDL_GPU_USE_SDL3
+	SDL_WriteIO((SDL_RWops*)context, data, size);
+#else
     SDL_RWwrite((SDL_RWops*)context, data, 1, size);
+#endif
 }
 
 GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool free_rwops, GPU_FileFormatEnum format)
@@ -1279,17 +1340,24 @@ GPU_bool GPU_SaveSurface_RW(SDL_Surface* surface, SDL_RWops* rwops, GPU_bool fre
         return GPU_FALSE;
     }
 
+	int bytes_per_pixel;
+#ifdef SDL_GPU_USE_SDL3
+	const SDL_PixelFormatDetails* f = SDL_GetPixelFormatDetails(surface->format);
+	bytes_per_pixel = f ? f->bytes_per_pixel : 0;
+#else
+	bytes_per_pixel = surface->format->BytesPerPixel;
+#endif
     // FIXME: The limitations here are not communicated clearly.  BMP and TGA won't support arbitrary row length/pitch.
     switch(format)
     {
     case GPU_FILE_PNG:
-        result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data, surface->pitch) > 0);
+        result = (stbi_write_png_to_func(write_func, rwops, surface->w, surface->h, bytes_per_pixel, (const unsigned char *const)data, surface->pitch) > 0);
         break;
     case GPU_FILE_BMP:
-        result = (stbi_write_bmp_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
+        result = (stbi_write_bmp_to_func(write_func, rwops, surface->w, surface->h, bytes_per_pixel, (const unsigned char *const)data) > 0);
         break;
     case GPU_FILE_TGA:
-        result = (stbi_write_tga_to_func(write_func, rwops, surface->w, surface->h, surface->format->BytesPerPixel, (const unsigned char *const)data) > 0);
+        result = (stbi_write_tga_to_func(write_func, rwops, surface->w, surface->h, bytes_per_pixel, (const unsigned char *const)data) > 0);
         break;
     default:
         GPU_PushErrorCode(__func__, GPU_ERROR_DATA_ERROR, "Unsupported output file format");

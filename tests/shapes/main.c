@@ -165,36 +165,36 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_SPACE)
+                    else if(event.key.key == SDLK_SPACE)
                     {
                         shapeType++;
                         if(shapeType >= numShapeTypes)
                             shapeType = 0;
                     }
-                    else if(event.key.keysym.sym == SDLK_BACKSPACE)
+                    else if(event.key.key == SDLK_BACKSPACE)
                     {
                         shapeType--;
                         if(shapeType < 0)
                             shapeType = numShapeTypes-1;
                     }
-                    else if(event.key.keysym.sym == SDLK_b)
+                    else if(event.key.key == SDLK_b)
                     {
                         blend = !blend;
                         GPU_SetShapeBlending(blend);
                     }
-                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    else if(event.key.key == SDLK_RETURN)
                     {
                         RANDOMIZE_SHAPE_DATA();
                     }
-                    else if(event.key.keysym.sym == SDLK_UP || event.key.keysym.sym == SDLK_EQUALS)
+                    else if(event.key.key == SDLK_UP || event.key.key == SDLK_EQUALS)
                     {
                         thickness += 0.25f;
                         GPU_LogError("thickness: %.2f\n", thickness);
                         GPU_SetLineThickness(thickness);
                     }
-                    else if(event.key.keysym.sym == SDLK_DOWN || event.key.keysym.sym == SDLK_MINUS)
+                    else if(event.key.key == SDLK_DOWN || event.key.key == SDLK_MINUS)
                     {
                         if(thickness > 0.25f)
                             thickness -= 0.25f;
@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
                         GPU_SetLineThickness(thickness);
                     }
                 }
-                else if(event.type == SDL_MOUSEBUTTONDOWN)
+                else if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                 {
                     if(event.button.button == SDL_BUTTON_LEFT)
                     {

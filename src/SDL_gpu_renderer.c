@@ -1,7 +1,11 @@
 #include <string.h>
 
 #include "SDL_gpu.h"
+#ifdef USING_SDL3
+#include "SDL3/SDL_platform.h"
+#else
 #include "SDL_platform.h"
+#endif
 
 #ifndef _MSC_VER
 #include <strings.h>

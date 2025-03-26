@@ -82,9 +82,9 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    if(event.key.keysym.sym == SDLK_SPACE)
+                    if(event.key.key == SDLK_SPACE)
                     {
                         if(switched)
                         {
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
                         }
                         switched = !switched;
                     }
-                    else if(event.key.keysym.sym == SDLK_v)
+                    else if(event.key.key == SDLK_v)
                     {
                         GPU_UnsetVirtualResolution(screen);
                         GPU_UnsetVirtualResolution(image->target);
@@ -115,9 +115,9 @@ int main(int argc, char* argv[])
                             GPU_UnsetVirtualResolution(images[i]->target);
                         }
                     }
-                    else if(event.key.keysym.sym == SDLK_RETURN)
+                    else if(event.key.key == SDLK_RETURN)
                         show_original = !show_original;
-                    else if(event.key.keysym.sym == SDLK_f)
+                    else if(event.key.key == SDLK_f)
                     {
                         if(filter_mode == GPU_FILTER_NEAREST)
                         {
@@ -137,41 +137,41 @@ int main(int argc, char* argv[])
                             GPU_SetImageFilter(images[i], filter_mode);
                         }
                     }
-                    else if(event.key.keysym.sym == SDLK_EQUALS)
+                    else if(event.key.key == SDLK_EQUALS)
                     {
                         if(using_images < max_images)
                             using_images++;
                         GPU_LogError("using_images: %d\n", using_images);
                     }
-                    else if(event.key.keysym.sym == SDLK_MINUS)
+                    else if(event.key.key == SDLK_MINUS)
                     {
                         if(using_images > 0)
                             using_images--;
                         GPU_LogError("using_images: %d\n", using_images);
                     }
-                    else if(event.key.keysym.sym == SDLK_r)
+                    else if(event.key.key == SDLK_r)
                     {
                         x = y = 0.0f;
                     }
-                    else if(event.key.keysym.sym == SDLK_UP)
+                    else if(event.key.key == SDLK_UP)
                         y -= 1.0f;
-                    else if(event.key.keysym.sym == SDLK_DOWN)
+                    else if(event.key.key == SDLK_DOWN)
                         y += 1.0f;
-                    else if(event.key.keysym.sym == SDLK_LEFT)
+                    else if(event.key.key == SDLK_LEFT)
                         x -= 1.0f;
-                    else if(event.key.keysym.sym == SDLK_RIGHT)
+                    else if(event.key.key == SDLK_RIGHT)
                         x += 1.0f;
                 }
-                else if(event.type == SDL_KEYUP)
+                else if(event.type == SDL_EVENT_KEY_UP)
                 {
-                    if(event.key.keysym.sym == SDLK_w
-                       || event.key.keysym.sym == SDLK_s
-                       || event.key.keysym.sym == SDLK_a
-                       || event.key.keysym.sym == SDLK_d
-                       || event.key.keysym.sym == SDLK_UP
-                       || event.key.keysym.sym == SDLK_DOWN
-                       || event.key.keysym.sym == SDLK_LEFT
-                       || event.key.keysym.sym == SDLK_RIGHT)
+                    if(event.key.key == SDLK_w
+                       || event.key.key == SDLK_s
+                       || event.key.key == SDLK_a
+                       || event.key.key == SDLK_d
+                       || event.key.key == SDLK_UP
+                       || event.key.key == SDLK_DOWN
+                       || event.key.key == SDLK_LEFT
+                       || event.key.key == SDLK_RIGHT)
                         GPU_LogError("x, y: (%.2f, %.2f)\n", x, y);
                 }
             }

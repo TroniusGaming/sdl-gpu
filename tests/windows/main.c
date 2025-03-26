@@ -125,9 +125,9 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    else if(event.key.keysym.sym == SDLK_EQUALS || event.key.keysym.sym == SDLK_PLUS)
+                    else if(event.key.key == SDLK_EQUALS || event.key.key == SDLK_PLUS)
                     {
                         for(i = 0; i < MAX_GROUPS; i++)
                         {
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
                             }
                         }
                     }
-                    else if(event.key.keysym.sym == SDLK_MINUS)
+                    else if(event.key.key == SDLK_MINUS)
                     {
                         if(num_groups > 0)
                         {
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
                         }
                     }
                 }
-                else if(event.type == SDL_MOUSEBUTTONDOWN)
+                else if(event.type == SDL_EVENT_MOUSE_BUTTON_DOWN)
                 {
                     GPU_Target* target = GPU_GetWindowTarget(event.button.windowID);
                     if(target == NULL)

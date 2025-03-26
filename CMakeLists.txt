@@ -109,6 +109,7 @@ option(BUILD_VIDEO_TEST "Build SDL_gpu video test program (requires FFMPEG)" OFF
 option(BUILD_TOOLS "Build SDL_gpu tool programs" OFF)
 option(BUILD_DOCS "Build SDL_gpu documentation" OFF)
 option(USE_SDL1 "Use SDL 1.2 headers and library instead of SDL 2" OFF)
+option(USE_SDL3 "Use SDL 3 headers and library instead of SDL 2" OFF)
 option(DISABLE_OPENGL "Disable OpenGL renderers.  Overrides specific OpenGL renderer flags." ${DEFAULT_DISABLE_OPENGL})
 option(DISABLE_GLES "Disable OpenGLES renderers.  Overrides specific GLES renderer flags." ${DEFAULT_DISABLE_GLES})
 option(DISABLE_OPENGL_1_BASE "Disable OpenGL 1 BASE renderer" OFF)
@@ -134,9 +135,11 @@ option(BUILD_STATIC "Build SDL_gpu static libraries" ${DEFAULT_BUILD_STATIC})
 
 if (USE_SDL1)
     set(SDL_GPU_LIBRARY SDL_gpu)
-else (USE_SDL1)
+elseif (USE_SDL3)
+    set(SDL_GPU_LIBRARY SDL3_gpu)
+else ()
     set(SDL_GPU_LIBRARY SDL2_gpu)
-endif (USE_SDL1)
+endif ()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/scripts)
 
@@ -165,7 +168,7 @@ else ()
     set(CMAKE_C_STANDARD 99)
 endif ()
 
-# Find the package for SDL or SDL2
+# Find the package for SDL, SDL2 or SDL3
 if (EMSCRIPTEN)
     add_definitions("-s USE_SDL=2")
 elseif (USE_SDL1)
@@ -177,6 +180,14 @@ elseif (USE_SDL1)
 
     include_directories(${SDL_INCLUDE_DIR})
     link_libraries(${SDL_LIBRARIES})
+elseif (USE_SDL3)
+    find_package(SDL3 REQUIRED)
+
+    if (NOT SDL3_FOUND)
+        message(FATAL_ERROR "SDL3 not found!")
+    endif (NOT SDL3_FOUND)
+
+    link_libraries(${SDL3_LIBRARIES})
 else ()
     find_package(SDL2 REQUIRED)
 

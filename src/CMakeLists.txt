@@ -63,11 +63,13 @@ set(SDL_gpu_public_HDRS
 )
 
 # Set the appropriate library name for the version of SDL used
-if ( USE_SDL1)
+if (USE_SDL1)
 	set (LIBRARY_OUTPUT_NAME "SDL_gpu")
-else ( USE_SDL1)
+elseif (USE_SDL3)
+	set (LIBRARY_OUTPUT_NAME "SDL3_gpu")
+else ()
 	set (LIBRARY_OUTPUT_NAME "SDL2_gpu")
-endif ( USE_SDL1)
+endif ()
 
 set (SHARED_OUTPUT ${LIBRARY_OUTPUT_NAME})
 
@@ -121,6 +123,10 @@ if(BUILD_SHARED)
 	)
 	
 	target_link_libraries(SDL_gpu_shared ${GL_LIBRARIES})
+
+	if (USE_SDL3)
+		target_compile_definitions(SDL_gpu_shared PUBLIC USING_SDL3)
+	endif ()
 
 	if(BUILD_FRAMEWORK)
         if(NOT CMAKE_VERSION VERSION_LESS "3.1")
@@ -193,8 +199,12 @@ if(BUILD_STATIC)
 	)
 	set_target_properties(SDL_gpu PROPERTIES LINKER_LANGUAGE C)
 	if(APPLE)
-		CONFIGURE_XCODE_DEFAULTS(SDL_gpu)	
+		CONFIGURE_XCODE_DEFAULTS(SDL_gpu)
 	endif()
+
+	if (USE_SDL3)
+		target_compile_definitions(SDL_gpu PUBLIC USING_SDL3)
+	endif ()
 endif()
 
 # These are used to create visual studio folders.
@@ -204,9 +214,11 @@ source_group(Common FILES ${SDL_gpu_SRCS} ${SDL_gpu_HDRS})
 if(INSTALL_LIBRARY)
 	if(USE_SDL1)
 		install(FILES ${SDL_gpu_public_HDRS} DESTINATION include/SDL)
-	else(USE_SDL1)
+	elseif(USE_SDL3)
+		install(FILES ${SDL_gpu_public_HDRS} DESTINATION include/SDL3)
+	else()
 		install(FILES ${SDL_gpu_public_HDRS} DESTINATION include/SDL2)
-	endif(USE_SDL1)
+	endif()
 
 	if(BUILD_SHARED)
 		install(TARGETS SDL_gpu_shared EXPORT SDL_gpu-targets DESTINATION lib)

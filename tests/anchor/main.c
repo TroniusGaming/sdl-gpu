@@ -45,31 +45,31 @@ int main(int argc, char* argv[])
                     done = 1;
                 else if(event.type == SDL_KEYDOWN)
                 {
-                    if(event.key.keysym.sym == SDLK_ESCAPE)
+                    if(event.key.key == SDLK_ESCAPE)
                         done = 1;
-                    if(event.key.keysym.sym == SDLK_1)
+                    if(event.key.key == SDLK_1)
                     {
                         anchor_x = 0.5f;
                         anchor_y = 0.5f;
                     }
-                    if(event.key.keysym.sym == SDLK_2)
+                    if(event.key.key == SDLK_2)
                     {
                         anchor_x = 0.0f;
                         anchor_y = 0.0f;
                     }
-                    if(event.key.keysym.sym == SDLK_3)
+                    if(event.key.key == SDLK_3)
                     {
                         anchor_x = 1.0f;
                         anchor_y = 1.0f;
                     }
-                    if(event.key.keysym.sym == SDLK_4)
+                    if(event.key.key == SDLK_4)
                     {
                         anchor_x = 1.0f;
                         anchor_y = 0.5f;
                     }
-                    if(event.key.keysym.sym == SDLK_SPACE)
+                    if(event.key.key == SDLK_SPACE)
 						mode = !mode;
-                    if(event.key.keysym.sym == SDLK_BACKSPACE)
+                    if(event.key.key == SDLK_BACKSPACE)
 						GPU_SetCoordinateMode(!GPU_GetCoordinateMode());
                 }
             }

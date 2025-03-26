@@ -100,7 +100,7 @@ https://grimfang4.github.io/sdl-gpu/
 CONVERSION
 ==========
 
-SDL_gpu can be used to replace the SDL_Render subsystem of SDL2.  SDL_gpu uses GPU_Target to represent a render target (a render destination, e.g. the screen) instead of an SDL_Renderer object.  SDL_gpu also uses GPU_Image as a texture container (a render source) instead of SDL_Texture.
+SDL_gpu can be used to replace the SDL_Render subsystem of SDL.  SDL_gpu uses GPU_Target to represent a render target (a render destination, e.g. the screen) instead of an SDL_Renderer object.  SDL_gpu also uses GPU_Image as a texture container (a render source) instead of SDL_Texture.
 
 Here is a list of most of the comparable functions:
 
