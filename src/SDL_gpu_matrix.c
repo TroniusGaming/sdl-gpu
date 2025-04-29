@@ -484,10 +484,11 @@ float* GPU_GetProjection(void)
 	return GPU_GetTopMatrix(&target->projection_matrix);
 }
 
-float* GPU_GetCurrentMatrix(void)
+float* GPU_GetCurrentMatrix(GPU_Target* target)
 {
 	GPU_MatrixStack* stack;
-	GPU_Target* target = GPU_GetActiveTarget();
+	if (!target)
+		target = GPU_GetActiveTarget();
 	if (target == NULL)
 		return NULL;
 	if (target->matrix_mode == GPU_MODEL)
@@ -500,10 +501,11 @@ float* GPU_GetCurrentMatrix(void)
 	return GPU_GetTopMatrix(stack);
 }
 
-void GPU_PushMatrix(void)
+void GPU_PushMatrix(GPU_Target* target)
 {
 	GPU_MatrixStack* stack;
-	GPU_Target* target = GPU_GetActiveTarget();
+	if (!target)
+		target = GPU_GetActiveTarget();
 	if (target == NULL)
 		return;
 
@@ -537,16 +539,18 @@ void GPU_PushMatrix(void)
 	stack->size++;
 }
 
-void GPU_PopMatrix(void)
+void GPU_PopMatrix(GPU_Target* target)
 {
 	GPU_MatrixStack* stack;
 
-	GPU_Target* target = GPU_GetActiveTarget();
+	if (!target)
+		target = GPU_GetActiveTarget();
 	if (target == NULL)
 		return;
 
 	// FIXME: Flushing here is not always necessary if this isn't the last target
-	GPU_FlushBlitBuffer();
+	if (target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
 
 	if (target->matrix_mode == GPU_MODEL)
 		stack = &target->model_matrix;
@@ -631,74 +635,84 @@ float* GPU_GetTopMatrix(GPU_MatrixStack* stack)
 	return stack->matrix[stack->size - 1];
 }
 
-void GPU_LoadIdentity(void)
+void GPU_LoadIdentity(GPU_Target* target)
 {
-	float* result = GPU_GetCurrentMatrix();
+	float* result = GPU_GetCurrentMatrix(target);
 	if (result == NULL)
 		return;
 
-	GPU_FlushBlitBuffer();
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
 	GPU_MatrixIdentity(result);
 }
 
-void GPU_LoadMatrix(const float* A)
+void GPU_LoadMatrix(GPU_Target* target, const float* A)
 {
-	float* result = GPU_GetCurrentMatrix();
+	float* result = GPU_GetCurrentMatrix(target);
 	if (result == NULL)
 		return;
-	GPU_FlushBlitBuffer();
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
 	GPU_MatrixCopy(result, A);
 }
 
-void GPU_Ortho(float left, float right, float bottom, float top, float z_near, float z_far)
+void GPU_Ortho(GPU_Target* target, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixOrtho(GPU_GetCurrentMatrix(), left, right, bottom, top, z_near, z_far);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixOrtho(GPU_GetCurrentMatrix(target), left, right, bottom, top, z_near, z_far);
 }
 
-void GPU_Frustum(float left, float right, float bottom, float top, float z_near, float z_far)
+void GPU_Frustum(GPU_Target* target, float left, float right, float bottom, float top, float z_near, float z_far)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixFrustum(GPU_GetCurrentMatrix(), left, right, bottom, top, z_near, z_far);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixFrustum(GPU_GetCurrentMatrix(target), left, right, bottom, top, z_near, z_far);
 }
 
-void GPU_Perspective(float fovy, float aspect, float z_near, float z_far)
+void GPU_Perspective(GPU_Target* target, float fovy, float aspect, float z_near, float z_far)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixPerspective(GPU_GetCurrentMatrix(), fovy, aspect, z_near, z_far);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixPerspective(GPU_GetCurrentMatrix(target), fovy, aspect, z_near, z_far);
 }
 
-void GPU_LookAt(float eye_x, float eye_y, float eye_z, float target_x, float target_y, float target_z, float up_x, float up_y, float up_z)
+void GPU_LookAt(GPU_Target* target, float eye_x, float eye_y, float eye_z, float target_x, float target_y, float target_z, float up_x, float up_y, float up_z)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixLookAt(GPU_GetCurrentMatrix(), eye_x, eye_y, eye_z, target_x, target_y, target_z, up_x, up_y, up_z);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixLookAt(GPU_GetCurrentMatrix(target), eye_x, eye_y, eye_z, target_x, target_y, target_z, up_x, up_y, up_z);
 }
 
 
-void GPU_Translate(float x, float y, float z)
+void GPU_Translate(GPU_Target* target, float x, float y, float z)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixTranslate(GPU_GetCurrentMatrix(), x, y, z);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixTranslate(GPU_GetCurrentMatrix(target), x, y, z);
 }
 
-void GPU_Scale(float sx, float sy, float sz)
+void GPU_Scale(GPU_Target* target, float sx, float sy, float sz)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixScale(GPU_GetCurrentMatrix(), sx, sy, sz);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixScale(GPU_GetCurrentMatrix(target), sx, sy, sz);
 }
 
-void GPU_Rotate(float degrees, float x, float y, float z)
+void GPU_Rotate(GPU_Target* target, float degrees, float x, float y, float z)
 {
-	GPU_FlushBlitBuffer();
-	GPU_MatrixRotate(GPU_GetCurrentMatrix(), degrees, x, y, z);
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
+	GPU_MatrixRotate(GPU_GetCurrentMatrix(target), degrees, x, y, z);
 }
 
-void GPU_MultMatrix(const float* A)
+void GPU_MultMatrix(GPU_Target* target, const float* A)
 {
-	float* result = GPU_GetCurrentMatrix();
+	float* result = GPU_GetCurrentMatrix(target);
 	if (result == NULL)
 		return;
-	GPU_FlushBlitBuffer();
+	if (!target || target == GPU_GetActiveTarget())
+		GPU_FlushBlitBuffer();
 	GPU_MultiplyAndAssign(result, A);
 }
 

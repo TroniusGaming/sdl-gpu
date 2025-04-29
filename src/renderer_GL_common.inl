@@ -3014,7 +3014,7 @@ static SDL_Surface* CopySurfaceFromImage(GPU_Renderer* renderer, GPU_Image* imag
 	bytes_per_pixel = details ? details->bytes_per_pixel : 0;
 #else
 	SDL_PixelFormat* format = AllocFormat(((GPU_IMAGE_DATA*)image->data)->format);
-	result = SDL_CreateRGBSurface(SDL_SWSURFACE, target->base_w, target->base_h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
+	result = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, format->BitsPerPixel, format->Rmask, format->Gmask, format->Bmask, format->Amask);
 	bytes_per_pixel = format->BytesPerPixel;
 	FreeFormat(format);
 #endif
