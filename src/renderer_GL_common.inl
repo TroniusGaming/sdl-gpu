@@ -2621,11 +2621,13 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, GPU_TextureHan
 			bytes_per_pixel = 2;
 			break;
 		case GL_RGB:
+		case GL_RGB8_EXT:
 			format = GPU_FORMAT_RGB;
 			num_layers = 1;
 			bytes_per_pixel = 3;
 			break;
 		case GL_RGBA:
+		case GL_RGBA8_EXT:
 			format = GPU_FORMAT_RGBA;
 			num_layers = 1;
 			bytes_per_pixel = 4;
