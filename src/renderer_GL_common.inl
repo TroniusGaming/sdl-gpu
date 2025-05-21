@@ -133,7 +133,9 @@ int gpu_strcasecmp(const char* s1, const char* s2);
 #define GPU_BLIT_BUFFER_TEX_COORD_OFFSET 2
 #define GPU_BLIT_BUFFER_COLOR_OFFSET     4
 
-
+#ifndef GPU_DEFAULT_IMAGE_SNAPPING
+#define GPU_DEFAULT_IMAGE_SNAPPING GPU_SNAP_POSITION_AND_DIMENSIONS
+#endif
 
 // SDL 1.2 / SDL 2.0 translation layer
 
@@ -2494,7 +2496,7 @@ static GPU_Image* CreateUninitializedImage(GPU_Renderer* renderer, Uint16 w, Uin
 	result->use_blending = GPU_TRUE;
 	result->blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
 	result->filter_mode = GPU_FILTER_LINEAR;
-	result->snap_mode = GPU_SNAP_POSITION_AND_DIMENSIONS;
+	result->snap_mode = GPU_DEFAULT_IMAGE_SNAPPING;
 	result->wrap_mode_x = GPU_WRAP_NONE;
 	result->wrap_mode_y = GPU_WRAP_NONE;
 
@@ -2740,7 +2742,7 @@ static GPU_Image* CreateImageUsingTexture(GPU_Renderer* renderer, GPU_TextureHan
 	result->color = white;
 	result->use_blending = GPU_TRUE;
 	result->blend_mode = GPU_GetBlendModeFromPreset(GPU_BLEND_NORMAL);
-	result->snap_mode = GPU_SNAP_POSITION_AND_DIMENSIONS;
+	result->snap_mode = GPU_DEFAULT_IMAGE_SNAPPING;
 	result->filter_mode = filter_mode;
 	result->wrap_mode_x = wrap_x;
 	result->wrap_mode_y = wrap_y;
