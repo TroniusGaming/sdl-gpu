@@ -273,6 +273,9 @@ typedef struct GPU_RendererImpl
 	/*! \see GPU_SetUniformBufferData() */
 	void (SDLCALL *SetUniformBufferData)(GPU_Renderer* renderer, Uint32 buffer, int offset, int size, const void* data);
 
+	/*! \see GPU_ResetUniformBufferData() */
+	void (SDLCALL *ResetUniformBufferData)(GPU_Renderer* renderer, Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type);
+
 	/*! \see GPU_CreateShaderStorageBuffer() */
 	Uint32 (SDLCALL *CreateShaderStorageBuffer)(GPU_Renderer* renderer);
 
