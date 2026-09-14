@@ -2659,6 +2659,14 @@ void GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const void* d
 	_gpu_current_renderer->impl->SetUniformBufferData(_gpu_current_renderer, buffer, offset, size, data);
 }
 
+void GPU_ResetUniformBufferData(Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
+{
+	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)
+		return;
+
+	_gpu_current_renderer->impl->ResetUniformBufferData(_gpu_current_renderer, buffer, size, data, access_frequency, usage_type);
+}
+
 Uint32 GPU_CreateShaderStorageBuffer(void)
 {
 	if(_gpu_current_renderer == NULL || _gpu_current_renderer->current_context_target == NULL)

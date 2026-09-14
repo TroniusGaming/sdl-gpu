@@ -2144,6 +2144,10 @@ DECLSPEC void SDLCALL GPU_BindUniformBuffer(Uint32 buffer, int binding_point, in
 /*! Sets the data for a uniform buffer object. */
 DECLSPEC void SDLCALL GPU_SetUniformBufferData(Uint32 buffer, int offset, int size, const void* data);
 
+/*! Replaces the whole data store of a uniform buffer object ("orphaning" the old storage). Unlike GPU_SetUniformBufferData() the upload never has to
+ *  wait for draw calls that still read the previous contents, which makes it the right call for per-draw streaming of uniform data. */
+DECLSPEC void SDLCALL GPU_ResetUniformBufferData(Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type);
+
 /*! Creates a shader storage buffer object to be used in shaders. */
 DECLSPEC Uint32 SDLCALL GPU_CreateShaderStorageBuffer(void);
 

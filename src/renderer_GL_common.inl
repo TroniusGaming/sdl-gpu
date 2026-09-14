@@ -7238,6 +7238,24 @@ static void SetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int offs
 	(void)data;
 }
 
+static void ResetUniformBufferData(GPU_Renderer* renderer, Uint32 buffer, int size, const void* data, GPU_ShaderBufferAccessFrequency access_frequency, GPU_ShaderBufferUsageType usage_type)
+{
+#ifndef SDL_GPU_DISABLE_SHADERS
+	// glBufferData with a fresh data store lets the driver orphan the storage still referenced by in-flight draws instead of
+	// stalling on it (the classic streaming idiom) - glBufferSubData on a busy buffer forces a sync or a copy.
+	glBindBuffer(GL_UNIFORM_BUFFER, buffer);
+	glBufferData(GL_UNIFORM_BUFFER, size, data, GetBufferUsageType(access_frequency, usage_type));
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+#endif
+
+	(void)renderer;
+	(void)buffer;
+	(void)size;
+	(void)data;
+	(void)access_frequency;
+	(void)usage_type;
+}
+
 static Uint32 CreateShaderStorageBuffer(GPU_Renderer* renderer)
 {
 	(void)renderer;
@@ -7358,6 +7376,7 @@ static void SetShaderStorageBufferData(GPU_Renderer* renderer, Uint32 buffer, in
 	impl->CreateUniformBuffer = &CreateUniformBuffer;                 \
 	impl->BindUniformBuffer = &BindUniformBuffer;                     \
 	impl->SetUniformBufferData = &SetUniformBufferData;               \
+	impl->ResetUniformBufferData = &ResetUniformBufferData;           \
 	impl->CreateShaderStorageBuffer = &CreateShaderStorageBuffer;     \
 	impl->SetShaderStorageBufferData = &SetShaderStorageBufferData;   \
                                                                       \
